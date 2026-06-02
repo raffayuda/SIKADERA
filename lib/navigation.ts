@@ -1,0 +1,98 @@
+export interface RouteMetadata {
+  title: string;
+  breadcrumb: string;
+  description: string;
+}
+
+export const routeMetadata: Record<string, RouteMetadata> = {
+  "/admin/dashboard": {
+    title: "Dashboard DPC Dramaga",
+    breadcrumb: "Dashboard / Overview",
+    description: "Ringkasan data dan aktivitas organisasi hari ini.",
+  },
+  "/admin/anggota": {
+    title: "Anggota & Kader",
+    breadcrumb: "Data & Keanggotaan / Anggota & Kader",
+    description: "Kelola data anggota dan kader DPC Dramaga.",
+  },
+  "/admin/klustering": {
+    title: "Klusterisasi / Peta Sebaran",
+    breadcrumb: "Data & Keanggotaan / Klustering",
+    description: "Peta sebaran kader di wilayah Dramaga.",
+  },
+  "/admin/kelompok-upa": {
+    title: "Kelompok UPA",
+    breadcrumb: "Pembinaan UPA / Kelompok",
+    description: "Kelola unit pembinaan anggota (UPA).",
+  },
+  "/admin/jadwal-upa": {
+    title: "Jadwal UPA",
+    breadcrumb: "Pembinaan UPA / Jadwal",
+    description: "Atur jadwal pertemuan rutin UPA.",
+  },
+  "/admin/rapor-keaktifan": {
+    title: "Rapor Keaktifan",
+    breadcrumb: "Pembinaan UPA / Rapor",
+    description: "Pantau tingkat keaktifan kader secara berkala.",
+  },
+  "/admin/event": {
+    title: "Jadwal Event",
+    breadcrumb: "Event / Jadwal",
+    description: "Kelola agenda dan acara DPC.",
+  },
+  "/admin/absensi-event": {
+    title: "Absensi Event (QR Scan)",
+    breadcrumb: "Event / Absensi",
+    description: "Sistem absensi cepat menggunakan QR Code.",
+  },
+  "/admin/iuran-infak": {
+    title: "Iuran & Infak",
+    breadcrumb: "Keuangan / Iuran",
+    description: "Monitor pembayaran iuran rutin anggota.",
+  },
+  "/admin/laporan-keuangan": {
+    title: "Laporan Keuangan",
+    breadcrumb: "Keuangan / Laporan",
+    description: "Rekapitulasi pemasukan dan pengeluaran kas.",
+  },
+  "/admin/inventaris-logistik": {
+    title: "Inventaris Logistik",
+    breadcrumb: "Logistik / Inventaris",
+    description: "Daftar aset dan perlengkapan organisasi.",
+  },
+  "/admin/peminjaman-logistik": {
+    title: "Peminjaman Logistik",
+    breadcrumb: "Logistik / Peminjaman",
+    description: "Kelola peminjaman barang oleh kader.",
+  },
+  "/admin/laporan-export": {
+    title: "Laporan & Export",
+    breadcrumb: "Laporan / Export",
+    description: "Generate dan unduh dokumen laporan resmi.",
+  },
+  "/admin/profile": {
+    title: "Profile Settings",
+    breadcrumb: "Settings / Profile",
+    description: "Kelola informasi profil dan KTA digital Anda.",
+  },
+};
+
+export const getRouteMetadata = (pathname: string): RouteMetadata => {
+  // Check for exact matches first
+  if (routeMetadata[pathname]) return routeMetadata[pathname];
+
+  // Handle dynamic routes
+  if (pathname.startsWith("/admin/kelompok-upa/")) {
+    return {
+      title: "Detail Kelompok UPA",
+      breadcrumb: "Pembinaan UPA / Kelompok / Detail",
+      description: "Informasi lengkap and daftar anggota kelompok UPA.",
+    };
+  }
+
+  return {
+    title: "SIKADERA",
+    breadcrumb: "Dashboard",
+    description: "Sistem Informasi Manajemen Kaderisasi",
+  };
+};

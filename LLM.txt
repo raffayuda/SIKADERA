@@ -1,0 +1,160 @@
+# shadcn/ui
+
+> shadcn/ui adalah kumpulan komponen yang dirancang dengan indah dan mudah diakses, serta platform distribusi kode. Dibangun dengan TypeScript, Tailwind CSS, dan primitif UI Radix. Mendukung berbagai framework termasuk Next.js, Vite, Remix, Astro, dan banyak lagi. Sumber Terbuka. Kode Terbuka. Siap untuk AI. Juga dilengkapi dengan alat baris perintah untuk menginstal dan mengelola komponen serta sistem registri untuk mempublikasikan dan mendistribusikan kode.
+
+## Ringkasan
+
+- [Pendahuluan](https://ui.shadcn.com/docs): Prinsip inti—Kode Terbuka, Komposisi, Distribusi, Pengaturan Default yang Indah, dan Desain Siap AI.
+- [CLI](https://ui.shadcn.com/docs/cli): Alat baris perintah untuk menginstal dan mengelola komponen.
+- [components.json](https://ui.shadcn.com/docs/components-json): File konfigurasi untuk menyesuaikan CLI dan instalasi komponen.
+- [Theming](https://ui.shadcn.com/docs/theming): Panduan untuk menyesuaikan warna, tipografi, dan token desain.
+- [Catatan Perubahan](https://ui.shadcn.com/docs/changelog): Catatan rilis dan riwayat versi.
+- [Keahlian](https://ui.shadcn.com/docs/skills): Pengetahuan mendalam tentang shadcn/ui untuk asisten AI seperti Claude Code.
+- [Direktori](https://ui.shadcn.com/docs/directory): Registri komunitas yang terintegrasi ke dalam CLI.
+
+## Instalasi
+
+- [Next.js](https://ui.shadcn.com/docs/installation/next): Instal shadcn/ui di proyek Next.js.
+- [Vite](https://ui.shadcn.com/docs/installation/vite): Instal shadcn/ui di proyek Vite.
+- [Remix](https://ui.shadcn.com/docs/installation/remix): Instal shadcn/ui di proyek Remix.
+- [Astro](https://ui.shadcn.com/docs/installation/astro): Instal shadcn/ui di proyek Astro.
+- [Laravel](https://ui.shadcn.com/docs/installation/laravel): Instal shadcn/ui di proyek Laravel.
+- [Gatsby](https://ui.shadcn.com/docs/installation/gatsby): Instal shadcn/ui di proyek Gatsby.
+- [React Router](https://ui.shadcn.com/docs/installation/react-router): Instal shadcn/ui di proyek React Router.
+- [TanStack Router](https://ui.shadcn.com/docs/installation/tanstack-router): Instal shadcn/ui di proyek TanStack Router.
+- [TanStack Start](https://ui.shadcn.com/docs/installation/tanstack): Instal shadcn/ui di proyek TanStack Start.
+- [Instalasi Manual](https://ui.shadcn.com/docs/installation/manual): Instal shadcn/ui secara manual tanpa menggunakan CLI.
+
+## Komponen
+
+### Formulir & Input
+
+- [Field](https://ui.shadcn.com/docs/components/field): Komponen field untuk input formulir dengan label dan pesan kesalahan.
+- [Tombol](https://ui.shadcn.com/docs/components/button): Komponen tombol dengan berbagai varian.
+- [Grup Tombol](https://ui.shadcn.com/docs/components/button-group): Mengelompokkan beberapa tombol menjadi satu.
+- [Input](https://ui.shadcn.com/docs/components/input): Komponen input teks.
+- [Grup Input](https://ui.shadcn.com/docs/components/input-group): Komponen input dengan tambahan awalan dan akhiran.
+- [Input OTP](https://ui.shadcn.com/docs/components/input-otp): Komponen input kata sandi satu kali.
+- [Textarea](https://ui.shadcn.com/docs/components/textarea): Komponen input teks multi-baris.
+- [Checkbox](https://ui.shadcn.com/docs/components/checkbox): Komponen input kotak centang.
+- [Grup Radio](https://ui.shadcn.com/docs/components/radio-group): Komponen grup tombol radio.
+- [Pilih](https://ui.shadcn.com/docs/components/select): Komponen dropdown Pilih.
+- [Native Select](https://ui.shadcn.com/docs/components/native-select): Elemen select HTML asli yang diberi gaya.
+- [Switch](https://ui.shadcn.com/docs/components/switch): Komponen saklar pengalih.
+- [Slider](https://ui.shadcn.com/docs/components/slider): Komponen input slider.
+- [Kalender](https://ui.shadcn.com/docs/components/calendar): Komponen kalender untuk pemilihan tanggal.
+- [Pemilih Tanggal](https://ui.shadcn.com/docs/components/date-picker): Komponen pemilih tanggal yang menggabungkan input dan kalender.
+- [Combobox](https://ui.shadcn.com/docs/components/combobox): Komponen pilihan yang dapat dicari dengan fitur pelengkapan otomatis.
+- [Label](https://ui.shadcn.com/docs/components/label): Komponen label formulir.
+
+### Tata Letak & Navigasi
+
+- [Akordeon](https://ui.shadcn.com/docs/components/accordion): Komponen akordeon yang dapat dilipat.
+- [Breadcrumb](https://ui.shadcn.com/docs/components/breadcrumb): Komponen navigasi breadcrumb.
+- [Menu Navigasi](https://ui.shadcn.com/docs/components/navigation-menu): Menu navigasi yang mudah diakses dengan menu tarik-turun.
+- [Sidebar](https://ui.shadcn.com/docs/components/sidebar): Komponen sidebar yang dapat dilipat untuk tata letak aplikasi.
+- [Tabs](https://ui.shadcn.com/docs/components/tabs): Komponen antarmuka bertab.
+- [Pemisah](https://ui.shadcn.com/docs/components/separator): Pembatas visual antara bagian-bagian konten.
+- [Area Gulir](https://ui.shadcn.com/docs/components/scroll-area): Area yang dapat digulir khusus dengan bilah gulir bergaya.
+- [Dapat diubah ukurannya](https://ui.shadcn.com/docs/components/resizable): Komponen tata letak panel yang dapat diubah ukurannya.
+
+### Hamparan & Dialog
+
+- [Dialog](https://ui.shadcn.com/docs/components/dialog): Komponen dialog modal.
+- [Dialog Peringatan](https://ui.shadcn.com/docs/components/alert-dialog): Dialog peringatan untuk permintaan konfirmasi.
+- [Lembar](https://ui.shadcn.com/docs/components/sheet): Komponen panel geser (laci).
+- [Drawer](https://ui.shadcn.com/docs/components/drawer): Komponen drawer yang ramah seluler menggunakan Vaul.
+- [Popover](https://ui.shadcn.com/docs/components/popover): Komponen popover mengambang.
+- [Tooltip](https://ui.shadcn.com/docs/components/tooltip): Komponen tooltip untuk konteks tambahan.
+- [Hover Card](https://ui.shadcn.com/docs/components/hover-card): Kartu yang muncul saat kursor diarahkan ke atasnya.
+- [Menu Konteks](https://ui.shadcn.com/docs/components/context-menu): Menu konteks klik kanan.
+- [Menu Dropdown](https://ui.shadcn.com/docs/components/dropdown-menu): Komponen menu dropdown.
+- [Menubar](https://ui.shadcn.com/docs/components/menubar): Komponen menubar horizontal.
+- [Perintah](https://ui.shadcn.com/docs/components/command): Komponen palet perintah (cmdk).
+
+### Umpan Balik & Status
+
+- [Alert](https://ui.shadcn.com/docs/components/alert): Komponen peringatan untuk pesan dan pemberitahuan.
+- [Toast](https://ui.shadcn.com/docs/components/toast): Komponen notifikasi Toast menggunakan Sonner.
+- [Sonner](https://ui.shadcn.com/docs/components/sonner): Komponen toast yang memiliki opini untuk React.
+- [Progress](https://ui.shadcn.com/docs/components/progress): Komponen bilah kemajuan.
+- [Spinner](https://ui.shadcn.com/docs/components/spinner): Komponen spinner sedang dimuat.
+- [Skeleton](https://ui.shadcn.com/docs/components/skeleton): Placeholder pemuatan Skeleton.
+- [Badge](https://ui.shadcn.com/docs/components/badge): Komponen badge untuk label dan indikator status.
+- [Kosong](https://ui.shadcn.com/docs/components/empty): Komponen status kosong untuk skenario tanpa data.
+
+### Tampilan & Media
+
+- [Avatar](https://ui.shadcn.com/docs/components/avatar): Komponen avatar untuk profil pengguna.
+- [Card](https://ui.shadcn.com/docs/components/card): Komponen kontainer kartu.
+- [Tabel](https://ui.shadcn.com/docs/components/table): Komponen tabel untuk menampilkan data.
+- [Tabel Data](https://ui.shadcn.com/docs/components/data-table): Tabel data tingkat lanjut dengan pengurutan, pemfilteran, dan penomoran halaman.
+- [Grafik](https://ui.shadcn.com/docs/components/chart): Komponen grafik menggunakan Recharts.
+- [Carousel](https://ui.shadcn.com/docs/components/carousel): Komponen carousel menggunakan Embla Carousel.
+- [Rasio Aspek](https://ui.shadcn.com/docs/components/aspect-ratio): Kontainer yang mempertahankan rasio aspek.
+- [Tipografi](https://ui.shadcn.com/docs/components/typography): Gaya dan komponen tipografi.
+- [Item](https://ui.shadcn.com/docs/components/item): Komponen item generik untuk daftar dan menu.
+- [Kbd](https://ui.shadcn.com/docs/components/kbd): Komponen tampilan pintasan keyboard.
+
+### Lain-lain
+
+- [Dapat Dilipat](https://ui.shadcn.com/docs/components/collapsible): Komponen kontainer yang dapat dilipat.
+- [Toggle](https://ui.shadcn.com/docs/components/toggle): Komponen tombol toggle.
+- [Grup Tombol Toggle](https://ui.shadcn.com/docs/components/toggle-group): Grup tombol toggle.
+- [Paginasi](https://ui.shadcn.com/docs/components/pagination): Komponen paginasi untuk daftar dan tabel.
+- [Arah](https://ui.shadcn.com/docs/components/direction): Penyedia arah teks untuk dukungan RTL.
+
+## Mode Gelap
+
+- [Mode Gelap](https://ui.shadcn.com/docs/dark-mode): Gambaran umum implementasi mode gelap.
+- [Mode Gelap - Next.js](https://ui.shadcn.com/docs/dark-mode/next): Pengaturan mode gelap untuk Next.js.
+- [Mode Gelap - Vite](https://ui.shadcn.com/docs/dark-mode/vite): Pengaturan mode gelap untuk Vite.
+- [Mode Gelap - Astro](https://ui.shadcn.com/docs/dark-mode/astro): Pengaturan mode gelap untuk Astro.
+- [Mode Gelap - Remix](https://ui.shadcn.com/docs/dark-mode/remix): Pengaturan mode gelap untuk Remix.
+
+## RTL
+
+- [RTL](https://ui.shadcn.com/docs/rtl): Gambaran umum dukungan bahasa kanan-ke-kiri.
+- [RTL - Next.js](https://ui.shadcn.com/docs/rtl/next): Pengaturan RTL untuk Next.js.
+- [RTL - Vite](https://ui.shadcn.com/docs/rtl/vite): Pengaturan RTL untuk Vite.
+- [RTL - TanStack Start](https://ui.shadcn.com/docs/rtl/start): Pengaturan RTL untuk TanStack Start.
+
+## Formulir
+
+- [Gambaran Umum Formulir](https://ui.shadcn.com/docs/forms): Panduan untuk membuat formulir dengan shadcn/ui.
+- [Formulir React Hook](https://ui.shadcn.com/docs/forms/react-hook-form): Menggunakan shadcn/ui dengan Formulir React Hook.
+- [Formulir TanStack](https://ui.shadcn.com/docs/forms/tanstack-form): Menggunakan shadcn/ui dengan Formulir TanStack.
+- [Formisch](https://ui.shadcn.com/docs/forms/formisch): Menggunakan shadcn/ui dengan Formisch.
+- [Formulir - Next.js](https://ui.shadcn.com/docs/forms/next): Membangun formulir di Next.js dengan Server Actions.
+
+## Canggih
+
+- [Monorepo](https://ui.shadcn.com/docs/monorepo): Menggunakan shadcn/ui dalam pengaturan monorepo.
+- [React 19](https://ui.shadcn.com/docs/react-19): Panduan dukungan dan migrasi React 19.
+- [Tailwind CSS v4](https://ui.shadcn.com/docs/tailwind-v4): Dukungan dan pengaturan Tailwind CSS v4.
+- [JavaScript](https://ui.shadcn.com/docs/javascript): Menggunakan shadcn/ui dengan JavaScript (tanpa TypeScript).
+- [Figma](https://ui.shadcn.com/docs/figurma): Sumber daya desain Figma.
+- [v0](https://ui.shadcn.com/docs/v0): Menghasilkan UI dengan v0 oleh Vercel.
+
+## Server MCP
+
+- [Server MCP](https://ui.shadcn.com/docs/mcp): Server Model Context Protocol untuk integrasi AI. Memungkinkan asisten AI untuk menelusuri, mencari, dan menginstal komponen dari registri menggunakan bahasa alami. Bekerja dengan Claude Code, Cursor, VS Code (GitHub Copilot), Codex, dan lainnya.
+
+## Registri
+
+- [Gambaran Umum Registri](https://ui.shadcn.com/docs/registry): Membuat dan menerbitkan registri komponen Anda sendiri.
+- [Memulai](https://ui.shadcn.com/docs/registry/getting-started): Siapkan registri Anda sendiri.
+- [Contoh](https://ui.shadcn.com/docs/registry/examples): Contoh registri.
+- [FAQ](https://ui.shadcn.com/docs/registry/faq): Pertanyaan umum tentang registri.
+- [Autentikasi](https://ui.shadcn.com/docs/registry/authentication): Menambahkan autentikasi ke registri Anda.
+- [Registri MCP](https://ui.shadcn.com/docs/registry/mcp): Integrasi MCP untuk registri.
+- [Namespace](https://ui.shadcn.com/docs/registry/namespace): Menggunakan beberapa registri dengan dukungan namespace.
+- [Tambahkan Registry](https://ui.shadcn.com/docs/registry/registry-index): Indeks registry sumber terbuka dan cara mengirimkan milik Anda.
+- [Open in v0](https://ui.shadcn.com/docs/registry/open-in-v0): Mengintegrasikan registri Anda dengan Open in v0.
+- [registry.json](https://ui.shadcn.com/docs/registry/registry-json): Skema `registry.json` untuk registri Anda sendiri.
+- [registry-item.json](https://ui.shadcn.com/docs/registry/registry-item-json): Spesifikasi `registry-item.json` untuk item registri.
+
+### Skema Registri
+
+- [Skema Registri](https://ui.shadcn.com/schema/registry.json): Skema JSON untuk file indeks registri. Mendefinisikan struktur untuk kumpulan komponen, hook, halaman, dll. Membutuhkan array nama, beranda, dan item.
+- [Skema Item Registri](https://ui.shadcn.com/schema/registry-item.json): Skema JSON untuk setiap item registri. Mendefinisikan komponen, hook, tema, dan kode terdistribusi lainnya dengan properti untuk dependensi, file, konfigurasi Tailwind, variabel CSS, dan banyak lagi.
