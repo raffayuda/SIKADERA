@@ -1,20 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
@@ -28,337 +24,234 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  IconCalendarEvent,
-  IconChevronRight,
-  IconClock,
-  IconDots,
-  IconDownload,
-  IconEdit,
-  IconFilter,
-  IconMapPin,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { api } from "@/lib/api";
+import {
   IconPlus,
   IconSearch,
-  IconUserCheck,
-  IconUsers,
   IconUsersGroup,
+  IconUsers,
+  IconUserCheck,
+  IconClock,
+  IconDots,
+  IconEdit,
   IconTrash,
   IconEye,
+  IconRefresh,
+  IconCalendarEvent,
+  IconMapPin,
+  IconChevronLeft,
+  IconChevronRight,
 } from "@tabler/icons-react";
 
-type UpaStatus = "Aktif" | "Perlu Perhatian" | "Tidak Aktif";
-
-interface UpaGroup {
-  id: string;
-  name: string;
-  mentor: string;
-  mentorPhone: string;
-  village: string;
-  location: string;
-  day: string;
-  time: string;
-  totalMembers: number;
-  activeMembers: number;
-  attendance: number;
-  lastMeeting: string;
-  material: string;
-  status: UpaStatus;
+interface KetuaData {
+  id: number;
+  namaLengkap: string;
+  noHp: string | null;
 }
 
-const initialUpaGroups: UpaGroup[] = [
-  {
-    id: "upa-babakan",
-    name: "UPA Babakan",
-    mentor: "Ust. Hamdan",
-    mentorPhone: "0812-1100-2201",
-    village: "Babakan",
-    location: "Masjid Al-Ikhlas Babakan",
-    day: "Jumat",
-    time: "19:30 WIB",
-    totalMembers: 96,
-    activeMembers: 82,
-    attendance: 85.4,
-    lastMeeting: "16 Sep 2026",
-    material: "Adab Menuntut Ilmu",
-    status: "Aktif",
-  },
-  {
-    id: "upa-dramaga",
-    name: "UPA Dramaga",
-    mentor: "Ust. Farid",
-    mentorPhone: "0813-8871-4412",
-    village: "Dramaga",
-    location: "Kantor DPC Dramaga",
-    day: "Kamis",
-    time: "20:00 WIB",
-    totalMembers: 88,
-    activeMembers: 71,
-    attendance: 80.7,
-    lastMeeting: "16 Sep 2026",
-    material: "Tafsir Surat Al-Hujurat",
-    status: "Aktif",
-  },
-  {
-    id: "upa-cikarawang",
-    name: "UPA Cikarawang",
-    mentor: "Ust. Anwar",
-    mentorPhone: "0857-3312-9941",
-    village: "Cikarawang",
-    location: "Mushola Al-Falah",
-    day: "Rabu",
-    time: "19:45 WIB",
-    totalMembers: 74,
-    activeMembers: 56,
-    attendance: 75.6,
-    lastMeeting: "15 Sep 2026",
-    material: "Sirah Nabawiyah",
-    status: "Aktif",
-  },
-  {
-    id: "upa-ciherang",
-    name: "UPA Ciherang",
-    mentor: "Ust. Ibrahim",
-    mentorPhone: "0821-7765-0091",
-    village: "Ciherang",
-    location: "Rumah Kader Ciherang",
-    day: "Selasa",
-    time: "19:30 WIB",
-    totalMembers: 69,
-    activeMembers: 47,
-    attendance: 68.1,
-    lastMeeting: "15 Sep 2026",
-    material: "Fiqih Ibadah",
-    status: "Perlu Perhatian",
-  },
-];
-
-const upcomingMeetings = [
-  {
-    group: "UPA Babakan",
-    mentor: "Ust. Hamdan",
-    date: "22 Sep 2026",
-    time: "19:30 WIB",
-  },
-  {
-    group: "UPA Dramaga",
-    mentor: "Ust. Farid",
-    date: "23 Sep 2026",
-    time: "20:00 WIB",
-  },
-  {
-    group: "UPA Cikarawang",
-    mentor: "Ust. Anwar",
-    date: "24 Sep 2026",
-    time: "19:45 WIB",
-  },
-];
-
-const summaryCards = [
-  {
-    title: "Total Kelompok UPA",
-    value: "24",
-    note: "kelompok aktif",
-    icon: IconUsersGroup,
-    tone: "emerald",
-  },
-  {
-    title: "Total Anggota Terbina",
-    value: "2,137",
-    note: "anggota dalam UPA",
-    icon: IconUsers,
-    tone: "sky",
-  },
-  {
-    title: "Rata-rata Kehadiran",
-    value: "76.4%",
-    note: "bulan berjalan",
-    icon: IconUserCheck,
-    tone: "emerald",
-  },
-  {
-    title: "Butuh Perhatian",
-    value: "5",
-    note: "kelompok rendah hadir",
-    icon: IconClock,
-    tone: "amber",
-  },
-];
-
-const tabs = [
-  { label: "Semua", value: "all", count: "24" },
-  { label: "Aktif", value: "Aktif", count: "19" },
-  { label: "Perlu Perhatian", value: "Perlu Perhatian", count: "5" },
-  { label: "Tidak Aktif", value: "Tidak Aktif", count: "1" },
-];
-
-function getInitials(name: string) {
-  return name
-    .replace("Ust.", "")
-    .trim()
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+interface KelompokData {
+  id: number;
+  namaKelompok: string;
+  ketuaId: number | null;
+  wilayah: string | null;
+  jadwalRutin: string | null;
+  deskripsi: string | null;
+  jumlahAnggota: number;
+  ketua: KetuaData | null;
 }
 
-function getToneClass(tone: string) {
-  switch (tone) {
-    case "emerald":
-      return "border-emerald-500/20 bg-emerald-500/10 text-emerald-300";
-    case "sky":
-      return "border-sky-500/20 bg-sky-500/10 text-sky-300";
-    case "amber":
-      return "border-amber-500/20 bg-amber-500/10 text-amber-300";
-    case "rose":
-      return "border-rose-500/20 bg-rose-500/10 text-rose-300";
-    default:
-      return "border-white/10 bg-white/5 text-zinc-300";
-  }
+interface KelompokForm {
+  namaKelompok: string;
+  wilayah: string;
+  jadwalRutin: string;
+  deskripsi: string;
 }
 
-function getStatusBadgeClass(status: UpaStatus) {
-  switch (status) {
-    case "Aktif":
-      return "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
-    case "Perlu Perhatian":
-      return "border-amber-500/30 bg-amber-500/10 text-amber-300";
-    case "Tidak Aktif":
-      return "border-rose-500/30 bg-rose-500/10 text-rose-300";
-    default:
-      return "border-white/10 bg-white/5 text-zinc-300";
-  }
-}
-
-function getAttendanceColor(value: number) {
-  if (value >= 75) return "text-emerald-300";
-  if (value >= 60) return "text-amber-300";
-  return "text-rose-300";
-}
+const emptyForm: KelompokForm = {
+  namaKelompok: "",
+  wilayah: "",
+  jadwalRutin: "",
+  deskripsi: "",
+};
 
 export default function KelompokUpaPage() {
-  const [activeTab, setActiveTab] = useState("all");
+  const [kelompokList, setKelompokList] = useState<KelompokData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [upaGroups, setUpaGroups] = useState<UpaGroup[]>(initialUpaGroups);
+  const [page, setPage] = useState(1);
+  const perPage = 10;
 
-  // Modal states
+  const [selectedGroup, setSelectedGroup] = useState<KelompokData | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<UpaGroup | null>(null);
+  const [formData, setFormData] = useState<KelompokForm>(emptyForm);
+  const [saving, setSaving] = useState(false);
 
-  // Form states
-  const [formData, setFormData] = useState<Partial<UpaGroup>>({
-    name: "",
-    mentor: "",
-    mentorPhone: "",
-    village: "Dramaga",
-    location: "",
-    day: "Senin",
-    time: "20:00 WIB",
-    status: "Aktif",
-  });
+  async function fetchData() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get<KelompokData[]>("/kelompok-upa");
+      setKelompokList(res);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal memuat data");
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const filteredGroups = useMemo(() => {
-    return upaGroups.filter((group) => {
-      const matchTab = activeTab === "all" || group.status === activeTab;
-      const keyword = search.toLowerCase();
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-      const matchSearch =
-        group.name.toLowerCase().includes(keyword) ||
-        group.mentor.toLowerCase().includes(keyword) ||
-        group.village.toLowerCase().includes(keyword) ||
-        group.location.toLowerCase().includes(keyword);
-
-      return matchTab && matchSearch;
+  const filteredList = useMemo(() => {
+    return kelompokList.filter((k) => {
+      const kw = search.toLowerCase();
+      return (
+        !kw ||
+        k.namaKelompok.toLowerCase().includes(kw) ||
+        (k.wilayah && k.wilayah.toLowerCase().includes(kw)) ||
+        (k.ketua && k.ketua.namaLengkap.toLowerCase().includes(kw))
+      );
     });
-  }, [activeTab, search, upaGroups]);
+  }, [kelompokList, search]);
 
-  const handleAdd = () => {
-    const newGroup: UpaGroup = {
-      ...formData as UpaGroup,
-      id: `upa-${Date.now()}`,
-      totalMembers: 0,
-      activeMembers: 0,
-      attendance: 0,
-      lastMeeting: "-",
-      material: "-",
-    };
-    setUpaGroups([newGroup, ...upaGroups]);
-    setIsAddOpen(false);
-    resetForm();
-  };
+  const totalPages = Math.max(1, Math.ceil(filteredList.length / perPage));
+  const paginatedList = filteredList.slice((page - 1) * perPage, page * perPage);
 
-  const handleEdit = () => {
+  function resetForm() {
+    setFormData(emptyForm);
+  }
+
+  async function handleAdd() {
+    setSaving(true);
+    try {
+      await api.post("/kelompok-upa", formData);
+      setIsAddOpen(false);
+      resetForm();
+      await fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal menambah kelompok");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleEdit() {
     if (!selectedGroup) return;
-    setUpaGroups(upaGroups.map(g => g.id === selectedGroup.id ? { ...g, ...formData } as UpaGroup : g));
-    setIsEditOpen(false);
-    resetForm();
-  };
+    setSaving(true);
+    try {
+      await api.put(`/kelompok-upa/${selectedGroup.id}`, formData);
+      setIsEditOpen(false);
+      setSelectedGroup(null);
+      resetForm();
+      await fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal mengupdate kelompok");
+    } finally {
+      setSaving(false);
+    }
+  }
 
-  const handleDelete = () => {
+  async function handleDelete() {
     if (!selectedGroup) return;
-    setUpaGroups(upaGroups.filter(g => g.id !== selectedGroup.id));
-    setIsDeleteOpen(false);
-    setSelectedGroup(null);
-  };
+    try {
+      await api.delete(`/kelompok-upa/${selectedGroup.id}`);
+      setIsDeleteOpen(false);
+      setSelectedGroup(null);
+      await fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal menghapus kelompok");
+    }
+  }
 
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      mentor: "",
-      mentorPhone: "",
-      village: "Dramaga",
-      location: "",
-      day: "Senin",
-      time: "20:00 WIB",
-      status: "Aktif",
-    });
-  };
-
-  const openEdit = (group: UpaGroup) => {
+  function openEdit(group: KelompokData) {
     setSelectedGroup(group);
-    setFormData(group);
+    setFormData({
+      namaKelompok: group.namaKelompok,
+      wilayah: group.wilayah || "",
+      jadwalRutin: group.jadwalRutin || "",
+      deskripsi: group.deskripsi || "",
+    });
     setIsEditOpen(true);
-  };
+  }
 
-  const openDelete = (group: UpaGroup) => {
+  function openDelete(group: KelompokData) {
     setSelectedGroup(group);
     setIsDeleteOpen(true);
-  };
+  }
+
+  const totalKelompok = kelompokList.length;
+  const totalAnggota = kelompokList.reduce((s, k) => s + k.jumlahAnggota, 0);
+
+  const summaryCards = [
+    { title: "Total Kelompok", value: String(totalKelompok), icon: IconUsersGroup, tone: "emerald" },
+    { title: "Total Anggota", value: String(totalAnggota), icon: IconUsers, tone: "sky" },
+  ];
+
+  if (loading && kelompokList.length === 0) {
+    return (
+      <>
+        <section className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {[...Array(2)].map((_, i) => (
+            <Card key={i} className="rounded-2xl border-white/10 bg-zinc-900/60">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="h-10 w-10 rounded-2xl bg-white/5" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-3 w-20 bg-white/5" />
+                    <Skeleton className="h-5 w-12 bg-white/5" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </section>
+        <Card className="rounded-2xl border-white/10 bg-zinc-900/60">
+          <CardContent className="p-4">
+            <div className="space-y-3">
+              {[...Array(4)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full rounded-xl bg-white/5" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </>
+    );
+  }
 
   return (
     <>
-      <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-2">
         {summaryCards.map((card) => {
           const Icon = card.icon;
-
           return (
-            <Card
-              key={card.title}
-              className="rounded-2xl border-white/10 bg-zinc-900/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
-            >
+            <Card key={card.title} className="rounded-2xl border-white/10 bg-zinc-900/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
               <CardContent className="flex items-center gap-4 p-4">
-                <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border ${getToneClass(
-                    card.tone
-                  )}`}
-                >
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border ${
+                  card.tone === "emerald"
+                    ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+                    : "border-sky-500/20 bg-sky-500/10 text-sky-300"
+                }`}>
                   <Icon className="h-5 w-5" />
                 </div>
-
                 <div className="min-w-0">
-                  <p className="truncate text-[11px] font-medium text-zinc-400">
-                    {card.title}
-                  </p>
-                  <p className="mt-1 truncate text-xl font-semibold tracking-tight text-zinc-50">
-                    {card.value}
-                  </p>
-                  <p className="mt-1 text-[11px] text-zinc-500">
-                    {card.note}
-                  </p>
+                  <p className="truncate text-[11px] font-medium text-zinc-400">{card.title}</p>
+                  <p className="mt-1 truncate text-xl font-semibold tracking-tight text-zinc-50">{card.value}</p>
                 </div>
               </CardContent>
             </Card>
@@ -366,450 +259,252 @@ export default function KelompokUpaPage() {
         })}
       </section>
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <Card className="rounded-2xl border-white/10 bg-zinc-900/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] xl:col-span-8">
-          <CardHeader className="p-4 pb-3">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="grid flex-1 gap-3 xl:grid-cols-[1.4fr_0.8fr_0.8fr_auto]">
-                <div className="flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-zinc-950/50 px-3 focus-within:border-emerald-500/40">
-                  <IconSearch className="h-4 w-4 shrink-0 text-zinc-500" />
-                  <Input
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    className="h-8 border-0 bg-transparent px-0 text-xs text-zinc-200 placeholder:text-zinc-500 focus-visible:ring-0"
-                    placeholder="Cari kelompok, murabbi, desa, lokasi..."
-                  />
-                </div>
-
-                <select className="h-9 rounded-xl border border-white/10 bg-zinc-950/50 px-3 text-xs text-zinc-300 outline-none">
-                  <option>Semua Desa</option>
-                  <option>Babakan</option>
-                  <option>Dramaga</option>
-                  <option>Cikarawang</option>
-                  <option>Ciherang</option>
-                  <option>Petir</option>
-                </select>
-
-                <select className="h-9 rounded-xl border border-white/10 bg-zinc-950/50 px-3 text-xs text-zinc-300 outline-none">
-                  <option>Semua Hari</option>
-                  <option>Senin</option>
-                  <option>Selasa</option>
-                  <option>Rabu</option>
-                  <option>Kamis</option>
-                  <option>Jumat</option>
-                  <option>Sabtu</option>
-                  <option>Ahad</option>
-                </select>
-
+      <Card className="rounded-2xl border-white/10 bg-zinc-900/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+        <CardHeader className="p-4 pb-3">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="grid flex-1 gap-3 xl:grid-cols-[1.5fr_auto]">
+              <div className="flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-zinc-950/50 px-3 focus-within:border-emerald-500/40">
+                <IconSearch className="h-4 w-4 shrink-0 text-zinc-500" />
+                <Input
+                  value={search}
+                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                  className="h-8 border-0 bg-transparent px-0 text-xs text-zinc-200 placeholder:text-zinc-500 focus-visible:ring-0"
+                  placeholder="Cari nama kelompok, wilayah, ketua..."
+                />
+              </div>
+              <div className="flex items-end gap-2">
                 <Button
                   variant="outline"
+                  onClick={fetchData}
                   className="h-9 rounded-xl border-white/10 bg-white/5 px-3 text-xs text-zinc-200 hover:bg-white/10"
                 >
-                  <IconFilter className="mr-1.5 h-3.5 w-3.5" />
-                  Filter
+                  <IconRefresh className="mr-1.5 h-3.5 w-3.5" />
+                  Refresh
                 </Button>
               </div>
-
-              <Button
-                onClick={() => setIsAddOpen(true)}
-                className="h-9 rounded-xl border border-emerald-400/40 bg-emerald-400/15 px-4 text-xs font-medium text-emerald-100 hover:bg-emerald-400/25"
-              >
-                <IconPlus className="mr-1.5 h-3.5 w-3.5" />
-                Buat Kelompok
-              </Button>
             </div>
-          </CardHeader>
 
-          <CardContent className="p-4 pt-0">
-            <div className="rounded-2xl border border-white/10 bg-zinc-950/40">
-              <div className="flex flex-wrap gap-2 p-3">
-                {tabs.map((tab) => {
-                  const isActive = activeTab === tab.value;
+            <Button
+              onClick={() => { resetForm(); setIsAddOpen(true); }}
+              className="h-9 rounded-xl border border-emerald-400/40 bg-emerald-400/15 px-4 text-xs font-medium text-emerald-100 hover:bg-emerald-400/25"
+            >
+              <IconPlus className="mr-1.5 h-3.5 w-3.5" />
+              Buat Kelompok
+            </Button>
+          </div>
+        </CardHeader>
 
-                  return (
-                    <Button
-                      key={tab.value}
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setActiveTab(tab.value)}
-                      className={[
-                        "h-8 rounded-xl px-3 text-xs font-medium",
-                        isActive
-                          ? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15"
-                          : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200",
-                      ].join(" ")}
-                    >
-                      {tab.label}
-                      <span className="ml-1 text-[11px] opacity-70">
-                        ({tab.count})
-                      </span>
-                    </Button>
-                  );
-                })}
+        <CardContent className="p-4 pt-0">
+          <div className="rounded-2xl border border-white/10 bg-zinc-950/40">
+            {error && (
+              <div className="mx-3 mt-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-300">
+                {error}
+                <button onClick={() => setError(null)} className="ml-2 underline">Tutup</button>
               </div>
+            )}
 
-              <Separator className="bg-white/10" />
-
-              <div className="grid grid-cols-1 gap-3 p-3 lg:grid-cols-2">
-                {filteredGroups.map((group) => (
-                  <Card
-                    key={group.id}
-                    className="rounded-2xl border-white/10 bg-zinc-900/50 transition hover:bg-white/[0.04]"
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="truncate text-sm font-semibold text-zinc-100">
-                              {group.name}
-                            </h3>
-
-                            <Badge
-                              variant="outline"
-                              className={`rounded-lg px-2 py-0 text-[10px] ${getStatusBadgeClass(
-                                group.status
-                              )}`}
-                            >
-                              {group.status}
-                            </Badge>
-                          </div>
-
-                          <p className="mt-1 text-xs text-zinc-500">
-                            {group.village} • {group.totalMembers} anggota
-                          </p>
-                        </div>
-
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 shrink-0 rounded-xl text-zinc-400 hover:bg-white/5 hover:text-zinc-100"
-                            >
-                              <IconDots className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="right">
-                            <DropdownMenuItem onClick={() => openEdit(group)}>
-                              <IconEdit className="mr-2 h-3.5 w-3.5" />
-                              Edit Kelompok
-                            </DropdownMenuItem>
-                            <DropdownMenuItem variant="destructive" onClick={() => openDelete(group)}>
-                              <IconTrash className="mr-2 h-3.5 w-3.5" />
-                              Hapus Kelompok
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-
-                      <div className="mt-4 flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                          <AvatarImage
-                            src={`https://picsum.photos/seed/${group.mentor}/64/64`}
-                            alt={group.mentor}
-                          />
-                          <AvatarFallback className="text-[10px]">
-                            {getInitials(group.mentor)}
-                          </AvatarFallback>
-                        </Avatar>
-
-                        <div className="min-w-0">
-                          <p className="truncate text-xs font-medium text-zinc-100">
-                            {group.mentor}
-                          </p>
-                          <p className="truncate text-[11px] text-zinc-500">
-                            {group.mentorPhone}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 grid grid-cols-2 gap-2">
-                        <div className="rounded-xl border border-white/10 bg-white/5 p-2">
-                          <div className="flex items-center gap-1.5 text-[10px] text-zinc-500">
-                            <IconCalendarEvent className="h-3.5 w-3.5" />
-                            Jadwal
-                          </div>
-                          <p className="mt-1 text-xs font-medium text-zinc-200">
-                            {group.day}, {group.time}
-                          </p>
-                        </div>
-
-                        <div className="rounded-xl border border-white/10 bg-white/5 p-2">
-                          <div className="flex items-center gap-1.5 text-[10px] text-zinc-500">
-                            <IconMapPin className="h-3.5 w-3.5" />
-                            Lokasi
-                          </div>
-                          <p className="mt-1 truncate text-xs font-medium text-zinc-200">
-                            {group.location}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-zinc-500">
-                            Kehadiran rata-rata
-                          </span>
-                          <span
-                            className={`font-semibold ${getAttendanceColor(
-                              group.attendance
-                            )}`}
-                          >
-                            {group.attendance}%
-                          </span>
-                        </div>
-                        <Progress
-                          value={group.attendance}
-                          className="h-1.5 bg-white/5"
-                        />
-                      </div>
-
-                      <Separator className="my-4 bg-white/10" />
-
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-[11px] text-zinc-500">
-                            Materi terakhir
-                          </p>
-                          <p className="truncate text-xs font-medium text-zinc-200">
-                            {group.material}
-                          </p>
-                        </div>
-
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          asChild
-                          className="h-8 shrink-0 rounded-xl border-white/10 bg-white/5 px-3 text-xs text-zinc-200 hover:bg-white/10"
-                        >
-                          <Link href={`/admin/kelompok-upa/${group.id}`}>
-                            Detail
-                            <IconChevronRight className="ml-1 h-3.5 w-3.5" />
+            <div>
+              {paginatedList.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <IconUsersGroup className="mb-3 h-10 w-10 text-zinc-600" />
+                  <p className="text-sm font-medium text-zinc-400">Tidak ada kelompok UPA</p>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    {search ? "Coba ubah pencarian" : "Klik Buat Kelompok untuk menambahkan data pertama"}
+                  </p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-white/10 bg-emerald-500/10 hover:bg-emerald-500/10">
+                      <TableHead className="h-10 text-xs text-zinc-300">Kelompok</TableHead>
+                      <TableHead className="h-10 text-xs text-zinc-300">Ketua</TableHead>
+                      <TableHead className="h-10 text-xs text-zinc-300">Wilayah</TableHead>
+                      <TableHead className="h-10 text-xs text-zinc-300">Jadwal</TableHead>
+                      <TableHead className="h-10 text-xs text-zinc-300 text-center">Anggota</TableHead>
+                      <TableHead className="h-10 text-right text-xs text-zinc-300">Aksi</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedList.map((group) => (
+                      <TableRow key={group.id} className="border-white/10 hover:bg-white/[0.03]">
+                        <TableCell className="min-w-[180px] py-2">
+                          <Link href={`/admin/kelompok-upa/${group.id}`} className="flex items-center gap-2 group">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
+                              <IconUsersGroup className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate text-xs font-semibold text-zinc-100 group-hover:text-emerald-300 transition-colors">
+                                {group.namaKelompok}
+                              </p>
+                              {group.deskripsi && (
+                                <p className="truncate text-[10px] text-zinc-500">{group.deskripsi}</p>
+                              )}
+                            </div>
                           </Link>
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              <Separator className="bg-white/10" />
-
-              <div className="flex items-center justify-between p-3">
-                <p className="text-xs text-zinc-500">
-                  Menampilkan{" "}
-                  <span className="text-zinc-300">
-                    {filteredGroups.length}
-                  </span>{" "}
-                  dari <span className="text-zinc-300">24</span> kelompok
-                </p>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 rounded-xl border-white/10 bg-white/5 px-3 text-xs text-zinc-300 hover:bg-white/10"
-                >
-                  Lihat semua
-                </Button>
-              </div>
+                        </TableCell>
+                        <TableCell className="min-w-[130px] py-2 text-xs text-zinc-300">
+                          {group.ketua ? (
+                            <div>
+                              <p className="text-zinc-100">{group.ketua.namaLengkap}</p>
+                              {group.ketua.noHp && <p className="text-[10px] text-zinc-500">{group.ketua.noHp}</p>}
+                            </div>
+                          ) : (
+                            <span className="text-zinc-500">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="py-2 text-xs text-zinc-300">{group.wilayah || "-"}</TableCell>
+                        <TableCell className="min-w-[130px] py-2 text-xs text-zinc-300">
+                          <div className="flex items-center gap-1.5">
+                            <IconCalendarEvent className="h-3.5 w-3.5 text-zinc-500" />
+                            {group.jadwalRutin || "-"}
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-2 text-center">
+                          <Badge variant="outline" className="rounded-lg px-2 py-0 text-[10px] border-sky-500/30 bg-sky-500/10 text-sky-300">
+                            {group.jumlahAnggota}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="py-2 text-right" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="icon" variant="ghost" className="h-8 w-8 rounded-xl text-zinc-400 hover:bg-white/5 hover:text-zinc-100">
+                                <IconDots className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="right">
+                              <DropdownMenuItem>
+                                <Link href={`/admin/kelompok-upa/${group.id}`} className="flex items-center gap-2">
+                                  <IconEye className="h-3.5 w-3.5" />
+                                  Detail
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openEdit(group)}>
+                                <IconEdit className="mr-2 h-3.5 w-3.5" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem variant="destructive" onClick={() => openDelete(group)}>
+                                <IconTrash className="mr-2 h-3.5 w-3.5" />
+                                Hapus
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </div>
-          </CardContent>
-        </Card>
 
-        <div className="space-y-4 xl:col-span-4">
-          <Card className="rounded-2xl border-white/10 bg-zinc-900/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-            <CardHeader className="p-4 pb-3">
-              <CardTitle className="text-sm font-semibold">
-                Jadwal UPA Terdekat
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Pertemuan yang akan berlangsung pekan ini.
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent className="space-y-3 p-4 pt-0">
-              {upcomingMeetings.map((meeting, index) => (
-                <div key={meeting.group}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-zinc-100">
-                        {meeting.group}
-                      </p>
-                      <p className="mt-1 text-[11px] text-zinc-500">
-                        {meeting.mentor}
-                      </p>
-                      <p className="mt-1 flex items-center gap-1.5 text-[11px] text-zinc-400">
-                        <IconClock className="h-3.5 w-3.5 text-zinc-500" />
-                        {meeting.date} • {meeting.time}
-                      </p>
-                    </div>
-
+            {paginatedList.length > 0 && (
+              <>
+                <Separator className="bg-white/10" />
+                <div className="flex items-center justify-between p-3">
+                  <p className="text-xs text-zinc-500">
+                    Menampilkan <span className="text-zinc-300">{filteredList.length}</span> kelompok
+                  </p>
+                  <div className="flex items-center gap-2">
                     <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 shrink-0 rounded-xl border-white/10 bg-white/5 px-3 text-xs text-zinc-200 hover:bg-white/10"
+                      variant="outline" size="icon" disabled={page <= 1}
+                      onClick={() => setPage(page - 1)}
+                      className="h-8 w-8 rounded-xl border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10 disabled:opacity-40"
                     >
-                      Absen
+                      <IconChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-xs text-zinc-500">{page} / {totalPages}</span>
+                    <Button
+                      variant="outline" size="icon" disabled={page >= totalPages}
+                      onClick={() => setPage(page + 1)}
+                      className="h-8 w-8 rounded-xl border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10 disabled:opacity-40"
+                    >
+                      <IconChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
-
-                  {index < upcomingMeetings.length - 1 ? (
-                    <Separator className="mt-3 bg-white/10" />
-                  ) : null}
                 </div>
-              ))}
-            </CardContent>
-          </Card>
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-          <Card className="rounded-2xl border-white/10 bg-zinc-900/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-            <CardHeader className="p-4 pb-3">
-              <CardTitle className="text-sm font-semibold">
-                Evaluasi Pembinaan
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Ringkasan kondisi UPA bulan ini.
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent className="space-y-3 p-4 pt-0">
-              <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-3">
-                <p className="text-xs font-medium text-emerald-200">
-                  19 kelompok aktif stabil
-                </p>
-                <p className="mt-1 text-[11px] leading-5 text-emerald-100/70">
-                  Kelompok dengan kehadiran di atas 75% sudah berjalan
-                  cukup baik.
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-3">
-                <p className="text-xs font-medium text-amber-200">
-                  5 kelompok perlu perhatian
-                </p>
-                <p className="mt-1 text-[11px] leading-5 text-amber-100/70">
-                  Prioritaskan monitoring murabbi and penjadwalan ulang
-                  untuk kelompok dengan kehadiran rendah.
-                </p>
-              </div>
-
-              <Button className="h-9 w-full rounded-xl border border-emerald-400/40 bg-emerald-400/15 text-xs font-medium text-emerald-100 hover:bg-emerald-400/25">
-                Buat Laporan Evaluasi
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
-      {/* Add/Edit Modal */}
-      <Dialog open={isAddOpen || isEditOpen} onOpenChange={(open) => {
-        if (!open) {
-          setIsAddOpen(false);
-          setIsEditOpen(false);
-          resetForm();
-        }
-      }}>
+      {/* Add Dialog */}
+      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>{isAddOpen ? "Buat Kelompok UPA" : "Edit Kelompok UPA"}</DialogTitle>
-            <DialogDescription>
-              {isAddOpen ? "Buat kelompok pembinaan baru." : `Perbarui data kelompok ${selectedGroup?.name}.`}
-            </DialogDescription>
+            <DialogTitle>Buat Kelompok UPA</DialogTitle>
+            <DialogDescription>Buat kelompok pembinaan baru.</DialogDescription>
           </DialogHeader>
-
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right text-xs">Nama UPA</Label>
-              <Input
-                id="name"
-                className="col-span-3 h-9"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Nama Kelompok</Label>
+                <Input className="h-9 text-xs" placeholder="Nama UPA" value={formData.namaKelompok} onChange={(e) => setFormData({ ...formData, namaKelompok: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Wilayah</Label>
+                <Input className="h-9 text-xs" placeholder="Desa/Kelurahan" value={formData.wilayah} onChange={(e) => setFormData({ ...formData, wilayah: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Jadwal Rutin</Label>
+                <Input className="h-9 text-xs" placeholder="Contoh: Jumat 19:30" value={formData.jadwalRutin} onChange={(e) => setFormData({ ...formData, jadwalRutin: e.target.value })} />
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="mentor" className="text-right text-xs">Murabbi</Label>
-              <Input
-                id="mentor"
-                className="col-span-3 h-9"
-                value={formData.mentor}
-                onChange={(e) => setFormData({ ...formData, mentor: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="phone" className="text-right text-xs">Telepon</Label>
-              <Input
-                id="phone"
-                className="col-span-3 h-9"
-                value={formData.mentorPhone}
-                onChange={(e) => setFormData({ ...formData, mentorPhone: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="village" className="text-right text-xs">Desa</Label>
-              <select
-                id="village"
-                className="col-span-3 h-9 rounded-xl border border-white/10 bg-zinc-950 px-3 text-xs text-zinc-300 outline-none focus:border-emerald-500/50"
-                value={formData.village}
-                onChange={(e) => setFormData({ ...formData, village: e.target.value })}
-              >
-                <option>Babakan</option>
-                <option>Dramaga</option>
-                <option>Cikarawang</option>
-                <option>Ciherang</option>
-                <option>Petir</option>
-              </select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="location" className="text-right text-xs">Lokasi</Label>
-              <Input
-                id="location"
-                className="col-span-3 h-9"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="day" className="text-right text-xs">Hari</Label>
-              <select
-                id="day"
-                className="col-span-3 h-9 rounded-xl border border-white/10 bg-zinc-950 px-3 text-xs text-zinc-300 outline-none focus:border-emerald-500/50"
-                value={formData.day}
-                onChange={(e) => setFormData({ ...formData, day: e.target.value })}
-              >
-                <option>Senin</option>
-                <option>Selasa</option>
-                <option>Rabu</option>
-                <option>Kamis</option>
-                <option>Jumat</option>
-                <option>Sabtu</option>
-                <option>Ahad</option>
-              </select>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-zinc-400">Deskripsi</Label>
+              <textarea className="min-h-[60px] w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-xs text-zinc-300 outline-none focus:border-emerald-500/50 resize-y" placeholder="Deskripsi kelompok" value={formData.deskripsi} onChange={(e) => setFormData({ ...formData, deskripsi: e.target.value })} />
             </div>
           </div>
-
           <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setIsAddOpen(false);
-              setIsEditOpen(false);
-              resetForm();
-            }}>Batal</Button>
-            <Button onClick={isAddOpen ? handleAdd : handleEdit} className="bg-emerald-500 hover:bg-emerald-600 text-white">
-              {isAddOpen ? "Simpan Kelompok" : "Simpan Perubahan"}
-            </Button>
+            <Button variant="outline" onClick={() => setIsAddOpen(false)} disabled={saving}>Batal</Button>
+            <Button onClick={handleAdd} disabled={saving || !formData.namaKelompok}>{saving ? "Menyimpan..." : "Simpan"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
+      {/* Edit Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Kelompok UPA</DialogTitle>
+            <DialogDescription>Perbarui data kelompok {selectedGroup?.namaKelompok}.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Nama Kelompok</Label>
+                <Input className="h-9 text-xs" value={formData.namaKelompok} onChange={(e) => setFormData({ ...formData, namaKelompok: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Wilayah</Label>
+                <Input className="h-9 text-xs" value={formData.wilayah} onChange={(e) => setFormData({ ...formData, wilayah: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Jadwal Rutin</Label>
+                <Input className="h-9 text-xs" value={formData.jadwalRutin} onChange={(e) => setFormData({ ...formData, jadwalRutin: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-zinc-400">Deskripsi</Label>
+              <textarea className="min-h-[60px] w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-xs text-zinc-300 outline-none focus:border-emerald-500/50 resize-y" value={formData.deskripsi} onChange={(e) => setFormData({ ...formData, deskripsi: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)} disabled={saving}>Batal</Button>
+            <Button onClick={handleEdit} disabled={saving || !formData.namaKelompok}>{saving ? "Menyimpan..." : "Simpan Perubahan"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle className="text-rose-400">Hapus Kelompok</DialogTitle>
             <DialogDescription>
-              Apakah Anda yakin ingin menghapus <strong>{selectedGroup?.name}</strong>? Data anggota dan riwayat absensi akan terhapus secara permanen.
+              Apakah Anda yakin ingin menghapus <strong>{selectedGroup?.namaKelompok}</strong>? Data anggota dan riwayat absensi akan terhapus secara permanen.
             </DialogDescription>
           </DialogHeader>
-
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Batal</Button>
             <Button variant="destructive" onClick={handleDelete} className="bg-rose-500 hover:bg-rose-600">Hapus Permanen</Button>

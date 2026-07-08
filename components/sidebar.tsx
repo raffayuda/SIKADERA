@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,12 +19,7 @@ import { useSidebar } from "@/lib/context/sidebar-context";
 import {
   IconLayoutDashboard,
   IconUsers,
-  IconUserPlus,
-  IconHierarchy2,
-  IconMapPins,
   IconUsersGroup,
-  IconCalendarEvent,
-  IconClipboardCheck,
   IconFileAnalytics,
   IconCalendar,
   IconQrcode,
@@ -47,24 +42,16 @@ const getMenuIcon = (label: string): React.ComponentType<IconProps> => {
       return IconLayoutDashboard;
     case "Anggota & Kader":
       return IconUsers;
-    case "Pendaftaran Anggota":
-      return IconUserPlus;
-    case "Jenjang Keanggotaan":
-      return IconHierarchy2;
-    case "Klusterisasi / Peta Sebaran":
-      return IconMapPins;
     case "Kelompok UPA":
       return IconUsersGroup;
-    case "Jadwal UPA":
-      return IconCalendarEvent;
-    case "Absensi UPA":
-      return IconClipboardCheck;
     case "Rapor Keaktifan":
       return IconFileAnalytics;
-    case "Jadwal Event":
+    case "Kegiatan":
       return IconCalendar;
-    case "Absensi Event (QR Scan)":
+    case "Absensi Kegiatan":
       return IconQrcode;
+    case "Laporan":
+      return IconFileAnalytics;
     case "Iuran & Infak":
       return IconWallet;
     case "Laporan Keuangan":
@@ -109,10 +96,6 @@ const defaultNavSections: NavigationSection[] = [
         label: "Anggota & Kader",
         href: "/admin/anggota",
       },
-      {
-        label: "Klusterisasi / Peta Sebaran",
-        href: "/admin/klustering",
-      },
     ],
   },
   {
@@ -123,25 +106,21 @@ const defaultNavSections: NavigationSection[] = [
         href: "/admin/kelompok-upa",
       },
       {
-        label: "Jadwal UPA",
-        href: "/admin/jadwal-upa",
-      },
-      {
         label: "Rapor Keaktifan",
         href: "/admin/rapor-keaktifan",
       },
     ],
   },
   {
-    title: "Event",
+    title: "Kegiatan",
     items: [
       {
-        label: "Jadwal Event",
-        href: "/admin/event",
+        label: "Kegiatan",
+        href: "/admin/kegiatan",
       },
       {
-        label: "Absensi Event (QR Scan)",
-        href: "/admin/absensi-event",
+        label: "Absensi Kegiatan",
+        href: "/admin/absensi-kegiatan",
       },
     ],
   },
@@ -175,6 +154,10 @@ const defaultNavSections: NavigationSection[] = [
     title: "Laporan",
     items: [
       {
+        label: "Laporan",
+        href: "/admin/laporan",
+      },
+      {
         label: "Laporan & Export",
         href: "/admin/laporan-export",
       },
@@ -205,7 +188,17 @@ export function Sidebar({
   className = "",
 }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { isMobileOpen, setIsMobileOpen, isCollapsed } = useSidebar();
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/login");
+    } catch {
+      router.push("/login");
+    }
+  };
 
   return (
     <>
@@ -368,7 +361,7 @@ export function Sidebar({
               </DropdownMenuItem>
             </Link>
             <DropdownMenuSeparator className="mx-1 my-1 bg-white/5" />
-            <DropdownMenuItem className="flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-rose-400 transition-colors focus:bg-rose-500/10 focus:text-rose-300">
+            <DropdownMenuItem onClick={handleLogout} className="flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-rose-400 transition-colors focus:bg-rose-500/10 focus:text-rose-300">
               <IconLogout className="h-4 w-4" />
               Logout
             </DropdownMenuItem>

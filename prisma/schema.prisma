@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        BigInt   @id @default(autoincrement())
+  email     String   @unique @db.VarChar(100)
+  password  String   @db.VarChar(255)
+  role      String   @default("user") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  anggota Anggota?
+
+  @@map("users")
+}
+
+model KelompokUpa {
+  id           BigInt   @id @default(autoincrement())
+  namaKelompok String   @map("nama_kelompok") @db.VarChar(100)
+  ketuaId      BigInt?  @map("ketua_id")
+  wilayah      String?  @db.VarChar(100)
+  jadwalRutin  String?  @map("jadwal_rutin") @db.VarChar(100)
+  deskripsi    String?  @db.Text
+
+  ketua             Anggota?            @relation("KetuaKelompok", fields: [ketuaId], references: [id])
+  anggota            Anggota[]
+  absensiKelompok    AbsensiKelompok[]
+  jadwalUpa          JadwalUpa[]
+
+  @@map("kelompok_upa")
+}
+
+model Anggota {
+  id            BigInt   @id @default(autoincrement())
+  userId        BigInt?  @unique @map("user_id")
+  kelompokId    BigInt?  @map("kelompok_id")
+
+  namaLengkap   String   @map("nama_lengkap") @db.VarChar(100)
+  nik           String?  @unique @db.VarChar(20)
+  noHp          String?  @map("no_hp") @db.VarChar(20)
+  tempatLahir   String?  @map("tempat_lahir") @db.VarChar(50)
+  tanggalLahir  DateTime? @map("tanggal_lahir") @db.Date
+  jenisKelamin  String?  @map("jenis_kelamin") @db.VarChar(1)
+  alamat        String?  @db.Text
+  pendidikan    String?  @db.VarChar(50)
+  pekerjaan     String?  @db.VarChar(100)
+  desil         Int?
+  status        String   @default("aktif") @db.VarChar(20)
+  tahunGabung   Int?     @map("tahun_gabung")
+
+  user               User?               @relation(fields: [userId], references: [id])
+  kelompok           KelompokUpa?        @relation(fields: [kelompokId], references: [id])
+  kelompokDipimpin   KelompokUpa[]       @relation("KetuaKelompok")
+
+  absensiKelompok    AbsensiKelompok[]
+  absensiKegiatan    AbsensiKegiatan[]
+  iuran              Iuran[]
+  peminjamanLogistik PeminjamanLogistik[]
+
+  @@map("anggota")
+}
+
+model Kegiatan {
+  id               BigInt  @id @default(autoincrement())
+  namaKegiatan     String  @map("nama_kegiatan") @db.VarChar(150)
+  jenis            String? @db.VarChar(50)
+  tanggal          DateTime? @db.Date
+  lokasi           String? @db.VarChar(150)
+  penanggungJawab  BigInt? @map("penanggung_jawab")
+  deskripsi        String? @db.Text
+
+  absensiKegiatan AbsensiKegiatan[]
+
+  @@map("kegiatan")
+}
+
+model AbsensiKelompok {
+  id          BigInt  @id @default(autoincrement())
+  kelompokId  BigInt? @map("kelompok_id")
+  anggotaId   BigInt? @map("anggota_id")
+  tanggal     DateTime? @db.Date
+  status      String  @default("hadir") @db.VarChar(20)
+
+  kelompok KelompokUpa? @relation(fields: [kelompokId], references: [id])
+  anggota  Anggota?     @relation(fields: [anggotaId], references: [id])
+
+  @@map("absensi_kelompok")
+}
+
+model AbsensiKegiatan {
+  id          BigInt  @id @default(autoincrement())
+  kegiatanId  BigInt? @map("kegiatan_id")
+  anggotaId   BigInt? @map("anggota_id")
+  status      String  @default("hadir") @db.VarChar(20)
+
+  kegiatan Kegiatan? @relation(fields: [kegiatanId], references: [id])
+  anggota  Anggota?  @relation(fields: [anggotaId], references: [id])
+
+  @@map("absensi_kegiatan")
+}
+
+model Iuran {
+  id          BigInt   @id @default(autoincrement())
+  anggotaId   BigInt?  @map("anggota_id")
+  jenis       String   @default("iuran") @db.VarChar(20)
+  nominal     Int?
+  tanggal     DateTime? @db.Date
+  status      String   @default("belum_lunas") @db.VarChar(20)
+  keterangan  String?  @db.Text
+
+  anggota Anggota? @relation(fields: [anggotaId], references: [id])
+
+  @@map("iuran")
+}
+
+model Logistik {
+  id          BigInt  @id @default(autoincrement())
+  namaBarang  String  @map("nama_barang") @db.VarChar(100)
+  jumlah      Int?
+  kondisi     String? @db.VarChar(50)
+
+  peminjamanLogistik PeminjamanLogistik[]
+
+  @@map("logistik")
+}
+
+model PeminjamanLogistik {
+  id              BigInt   @id @default(autoincrement())
+  anggotaId       BigInt?  @map("anggota_id")
+  logistikId      BigInt?  @map("logistik_id")
+  jumlahPinjam    Int?     @map("jumlah_pinjam")
+  tanggalPinjam   DateTime? @map("tanggal_pinjam") @db.Date
+  tanggalKembali  DateTime? @map("tanggal_kembali") @db.Date
+  status          String   @default("dipinjam") @db.VarChar(20)
+
+  anggota  Anggota?  @relation(fields: [anggotaId], references: [id])
+  logistik Logistik? @relation(fields: [logistikId], references: [id])
+
+  @@map("peminjaman_logistik")
+}
+
+model JadwalUpa {
+  id          BigInt  @id @default(autoincrement())
+  kelompokId  BigInt? @map("kelompok_id")
+  hari        String? @db.VarChar(20)
+  waktu       String? @db.VarChar(20)
+  tempat      String? @db.VarChar(150)
+  mapsUrl     String? @map("maps_url") @db.VarChar(500)
+  aktivitas   String? @db.Text
+
+  kelompok KelompokUpa? @relation(fields: [kelompokId], references: [id])
+
+  @@map("jadwal_upa")
+}

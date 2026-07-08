@@ -15,20 +15,10 @@ export const routeMetadata: Record<string, RouteMetadata> = {
     breadcrumb: "Data & Keanggotaan / Anggota & Kader",
     description: "Kelola data anggota dan kader DPC Dramaga.",
   },
-  "/admin/klustering": {
-    title: "Klusterisasi / Peta Sebaran",
-    breadcrumb: "Data & Keanggotaan / Klustering",
-    description: "Peta sebaran kader di wilayah Dramaga.",
-  },
   "/admin/kelompok-upa": {
     title: "Kelompok UPA",
     breadcrumb: "Pembinaan UPA / Kelompok",
     description: "Kelola unit pembinaan anggota (UPA).",
-  },
-  "/admin/jadwal-upa": {
-    title: "Jadwal UPA",
-    breadcrumb: "Pembinaan UPA / Jadwal",
-    description: "Atur jadwal pertemuan rutin UPA.",
   },
   "/admin/rapor-keaktifan": {
     title: "Rapor Keaktifan",
@@ -44,6 +34,21 @@ export const routeMetadata: Record<string, RouteMetadata> = {
     title: "Absensi Event (QR Scan)",
     breadcrumb: "Event / Absensi",
     description: "Sistem absensi cepat menggunakan QR Code.",
+  },
+  "/admin/kegiatan": {
+    title: "Kegiatan",
+    breadcrumb: "Kegiatan / Daftar",
+    description: "Kelola kegiatan dan agenda organisasi.",
+  },
+  "/admin/absensi-kegiatan": {
+    title: "Absensi Kegiatan",
+    breadcrumb: "Kegiatan / Absensi",
+    description: "Catat kehadiran peserta kegiatan organisasi.",
+  },
+  "/admin/laporan": {
+    title: "Laporan",
+    breadcrumb: "Laporan / Ringkasan",
+    description: "Ringkasan dan rekap data organisasi.",
   },
   "/admin/iuran-infak": {
     title: "Iuran & Infak",
