@@ -22,7 +22,6 @@ import {
   IconUsersGroup,
   IconFileAnalytics,
   IconCalendar,
-  IconQrcode,
   IconWallet,
   IconChartBar,
   IconPackage,
@@ -48,8 +47,6 @@ const getMenuIcon = (label: string): React.ComponentType<IconProps> => {
       return IconFileAnalytics;
     case "Kegiatan":
       return IconCalendar;
-    case "Absensi Kegiatan":
-      return IconQrcode;
     case "Laporan":
       return IconFileAnalytics;
     case "Iuran & Infak":
@@ -117,10 +114,6 @@ const defaultNavSections: NavigationSection[] = [
       {
         label: "Kegiatan",
         href: "/admin/kegiatan",
-      },
-      {
-        label: "Absensi Kegiatan",
-        href: "/admin/absensi-kegiatan",
       },
     ],
   },
@@ -211,19 +204,19 @@ export function Sidebar({
       />
 
       <aside
-        className={`fixed left-0 top-0 z-[70] flex h-screen flex-col border-r border-white/10 bg-zinc-950/90 px-4 py-5 backdrop-blur-xl transition-all duration-300 lg:z-50 ${
+        className={`fixed left-0 top-0 z-[70] flex h-screen flex-col border-r border-zinc-200 dark:border-white/10 bg-zinc-50/90 dark:bg-zinc-950/90 px-4 py-5 backdrop-blur-xl transition-all duration-300 lg:z-50 ${
           isMobileOpen ? "translate-x-0 w-72" : "-translate-x-full lg:translate-x-0"
         } ${isCollapsed ? "lg:w-20" : "lg:w-72"} ${className}`}
       >
         {/* Brand */}
         <div className="flex items-center justify-between lg:block">
           <Link href="/admin/dashboard" className={`mb-5 flex items-center gap-3 ${isCollapsed ? "lg:justify-center" : ""}`}>
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-zinc-900/70 text-xs font-semibold text-zinc-200">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200 dark:border-white/10 bg-zinc-100 dark:bg-zinc-900/70 text-xs font-semibold text-zinc-800 dark:text-zinc-200">
               SK
             </div>
 
             <div className={`min-w-0 transition-all duration-300 ${isCollapsed ? "lg:hidden" : "lg:block"}`}>
-              <p className="truncate text-sm font-semibold tracking-tight text-zinc-100">
+              <p className="truncate text-sm font-semibold tracking-tight text-zinc-800 dark:text-zinc-100">
                 SIKADERA
               </p>
               <p className="truncate text-xs text-zinc-500">DPC Dramaga</p>
@@ -246,17 +239,17 @@ export function Sidebar({
             Search
           </p>
 
-          <div className="flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-zinc-900/60 px-3 transition-colors focus-within:border-emerald-500/50">
-            <IconSearch className="h-4 w-4 shrink-0 text-zinc-500" />
+          <div className="flex h-9 items-center gap-2 rounded-xl border border-zinc-200 dark:border-white/10 bg-zinc-100/50 dark:bg-zinc-900/60 px-3 transition-colors focus-within:border-emerald-500/50">
+            <IconSearch className="h-4 w-4 shrink-0 text-zinc-400 dark:text-zinc-500" />
 
             <Input
-              className="h-7 min-w-0 border-0 bg-transparent px-0 text-xs text-zinc-200 placeholder:text-zinc-500 focus-visible:ring-0"
+              className="h-7 min-w-0 border-0 bg-transparent px-0 text-xs text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus-visible:ring-0"
               placeholder="Cari data..."
             />
 
             <Badge
               variant="outline"
-              className="shrink-0 rounded-md border-white/10 px-1.5 py-0 text-[10px] font-medium text-zinc-400"
+              className="shrink-0 rounded-md border-zinc-200 dark:border-white/10 px-1.5 py-0 text-[10px] font-medium text-zinc-400"
             >
               Ctrl K
             </Badge>
@@ -289,8 +282,8 @@ export function Sidebar({
                         variant="ghost"
                         className={`group h-9 w-full justify-start gap-2.5 rounded-xl px-2.5 text-xs font-medium transition-all ${
                           isActive
-                            ? "bg-white/10 text-zinc-50 hover:bg-white/10"
-                            : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                            ? "bg-zinc-200/60 dark:bg-white/10 text-zinc-900 dark:text-zinc-50 hover:bg-zinc-200/60 dark:hover:bg-white/10"
+                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-zinc-200"
                         } ${isCollapsed ? "lg:justify-center lg:px-0" : ""}`}
                         onClick={() => onItemSelect?.(item.label)}
                         title={isCollapsed ? item.label : ""}
@@ -299,8 +292,8 @@ export function Sidebar({
                           <IconComponent
                             className={`h-[18px] w-[18px] shrink-0 transition-colors ${
                               isActive
-                                ? "text-emerald-400"
-                                : "text-zinc-500 group-hover:text-zinc-400"
+                                ? "text-emerald-500 dark:text-emerald-400"
+                                : "text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-500 group-hover:dark:text-zinc-400"
                             } ${isCollapsed ? "lg:mx-auto" : ""}`}
                           />
 
@@ -322,12 +315,12 @@ export function Sidebar({
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className={`mt-auto h-auto w-full justify-start rounded-2xl border border-white/10 bg-zinc-900/40 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-all hover:bg-white/[0.05] focus-visible:ring-0 ${
+              className={`mt-auto h-auto w-full justify-start rounded-2xl border border-zinc-200 dark:border-white/10 bg-zinc-100/50 dark:bg-zinc-900/40 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-all hover:bg-zinc-200/60 hover:dark:bg-white/[0.05] focus-visible:ring-0 ${
                 isCollapsed ? "lg:h-12 lg:w-12 lg:p-0 lg:justify-center lg:mx-auto" : ""
               }`}
             >
               <div className={`flex items-center gap-3 ${isCollapsed ? "lg:justify-center" : ""}`}>
-                <Avatar className="h-8 w-8 shrink-0 rounded-xl border border-white/10 shadow-sm">
+                <Avatar className="h-8 w-8 shrink-0 rounded-xl border border-zinc-200 dark:border-white/10 shadow-sm">
                   <AvatarImage
                     src="https://picsum.photos/seed/admin/64/64"
                     alt="Admin DPC"
@@ -338,10 +331,10 @@ export function Sidebar({
                 </Avatar>
 
                 <div className={`min-w-0 text-left transition-all duration-300 ${isCollapsed ? "lg:hidden" : "lg:block"}`}>
-                  <p className="truncate text-xs font-semibold text-zinc-100">
+                  <p className="truncate text-xs font-semibold text-zinc-800 dark:text-zinc-100">
                     Admin DPC
                   </p>
-                  <p className="truncate text-[10px] font-medium text-zinc-500">
+                  <p className="truncate text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
                     Super Admin
                   </p>
                 </div>
@@ -351,17 +344,17 @@ export function Sidebar({
           <DropdownMenuContent
             align="end"
             side={isCollapsed ? "right" : "top"}
-            className="w-56 rounded-2xl border-white/10 bg-zinc-950/90 p-1.5 shadow-2xl backdrop-blur-xl"
+            className="w-56 rounded-2xl border-zinc-200 dark:border-white/10 bg-white/90 dark:bg-zinc-950/90 p-1.5 shadow-2xl backdrop-blur-xl"
             sideOffset={isCollapsed ? 16 : 12}
           >
             <Link href="/admin/profile">
-              <DropdownMenuItem className="flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-zinc-300 transition-colors focus:bg-white/5 focus:text-zinc-50">
-                <IconUser className="h-4 w-4 text-zinc-500" />
+              <DropdownMenuItem className="flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 transition-colors focus:bg-zinc-100 focus:dark:bg-white/5 focus:text-zinc-900 focus:dark:text-zinc-50">
+                <IconUser className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
                 Profile Settings
               </DropdownMenuItem>
             </Link>
-            <DropdownMenuSeparator className="mx-1 my-1 bg-white/5" />
-            <DropdownMenuItem onClick={handleLogout} className="flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-rose-400 transition-colors focus:bg-rose-500/10 focus:text-rose-300">
+            <DropdownMenuSeparator className="mx-1 my-1 bg-zinc-200 dark:bg-white/5" />
+            <DropdownMenuItem onClick={handleLogout} className="flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-rose-500 dark:text-rose-400 transition-colors focus:bg-rose-500/10 focus:text-rose-600 dark:focus:text-rose-300">
               <IconLogout className="h-4 w-4" />
               Logout
             </DropdownMenuItem>

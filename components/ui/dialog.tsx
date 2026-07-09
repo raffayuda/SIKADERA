@@ -44,7 +44,7 @@ const Dialog = ({
         open ? "opacity-100" : "opacity-0 pointer-events-none"
       )}>
         <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm"
           onClick={() => onOpenChange?.(false)}
         />
         <div className={cn(

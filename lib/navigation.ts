@@ -38,12 +38,7 @@ export const routeMetadata: Record<string, RouteMetadata> = {
   "/admin/kegiatan": {
     title: "Kegiatan",
     breadcrumb: "Kegiatan / Daftar",
-    description: "Kelola kegiatan dan agenda organisasi.",
-  },
-  "/admin/absensi-kegiatan": {
-    title: "Absensi Kegiatan",
-    breadcrumb: "Kegiatan / Absensi",
-    description: "Catat kehadiran peserta kegiatan organisasi.",
+    description: "Kelola kegiatan, agenda, dan absensi peserta.",
   },
   "/admin/laporan": {
     title: "Laporan",
@@ -52,8 +47,8 @@ export const routeMetadata: Record<string, RouteMetadata> = {
   },
   "/admin/iuran-infak": {
     title: "Iuran & Infak",
-    breadcrumb: "Keuangan / Iuran",
-    description: "Monitor pembayaran iuran rutin anggota.",
+    breadcrumb: "Keuangan / Iuran & Infak",
+    description: "Kelola iuran periodik anggota dan infak sukarela.",
   },
   "/admin/laporan-keuangan": {
     title: "Laporan Keuangan",

@@ -24,7 +24,24 @@ export default function RootLayout({
       lang="en"
       className={`${geist.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-background text-foreground dark">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                if (localStorage.theme === 'light' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+                  document.documentElement.classList.remove('dark');
+                  document.documentElement.classList.add('light');
+                } else {
+                  document.documentElement.classList.add('dark');
+                  document.documentElement.classList.remove('light');
+                }
+              } catch (_) {}
+            `,
+          }}
+        />
+      </head>
+      <body className="min-h-full flex flex-col bg-background text-foreground transition-colors duration-300">
         <SidebarProvider>
           <ClientLayout>{children}</ClientLayout>
         </SidebarProvider>

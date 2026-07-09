@@ -59,7 +59,8 @@ model Anggota {
 
   absensiKelompok    AbsensiKelompok[]
   absensiKegiatan    AbsensiKegiatan[]
-  iuran              Iuran[]
+  pembayaranIuran    PembayaranIuran[]
+  infak              Infak[]
   peminjamanLogistik PeminjamanLogistik[]
 
   @@map("anggota")
@@ -70,7 +71,11 @@ model Kegiatan {
   namaKegiatan     String  @map("nama_kegiatan") @db.VarChar(150)
   jenis            String? @db.VarChar(50)
   tanggal          DateTime? @db.Date
+  jamMulai         String? @map("jam_mulai") @db.VarChar(10)
+  jamSelesai       String? @map("jam_selesai") @db.VarChar(10)
   lokasi           String? @db.VarChar(150)
+  mapsUrl          String? @map("maps_url") @db.VarChar(500)
+  gambar           String? @db.VarChar(500)
   penanggungJawab  BigInt? @map("penanggung_jawab")
   deskripsi        String? @db.Text
 
@@ -104,18 +109,81 @@ model AbsensiKegiatan {
   @@map("absensi_kegiatan")
 }
 
-model Iuran {
-  id          BigInt   @id @default(autoincrement())
-  anggotaId   BigInt?  @map("anggota_id")
-  jenis       String   @default("iuran") @db.VarChar(20)
-  nominal     Int?
-  tanggal     DateTime? @db.Date
-  status      String   @default("belum_lunas") @db.VarChar(20)
-  keterangan  String?  @db.Text
+model JenisIuran {
+  id        BigInt  @id @default(autoincrement())
+  namaIuran String  @map("nama_iuran") @db.VarChar(100)
+  nominal   Int
+  status    String  @default("aktif") @db.VarChar(20)
+
+  periodeIuran PeriodeIuran[]
+
+  @@map("jenis_iuran")
+}
+
+model PeriodeIuran {
+  id           BigInt  @id @default(autoincrement())
+  jenisIuranId BigInt  @map("jenis_iuran_id")
+  bulan        Int
+  tahun        Int
+  nominal      Int
+  dibuatOleh   BigInt? @map("dibuat_oleh")
+  tanggalDibuat DateTime @default(now()) @map("tanggal_dibuat")
+
+  jenisIuran     JenisIuran        @relation(fields: [jenisIuranId], references: [id])
+  pembayaranIuran PembayaranIuran[]
+
+  @@map("periode_iuran")
+}
+
+model PembayaranIuran {
+  id               BigInt    @id @default(autoincrement())
+  periodeIuranId   BigInt    @map("periode_iuran_id")
+  anggotaId        BigInt    @map("anggota_id")
+  nominalTagihan   Int       @map("nominal_tagihan")
+  nominalBayar     Int?      @map("nominal_bayar")
+  tanggalBayar     DateTime? @map("tanggal_bayar")
+  status           String    @default("belum_bayar") @db.VarChar(20)
+  metodePembayaran String?   @map("metode_pembayaran") @db.VarChar(50)
+  buktiPembayaran  String?   @map("bukti_pembayaran") @db.VarChar(500)
+  catatan          String?   @db.Text
+
+  periodeIuran PeriodeIuran @relation(fields: [periodeIuranId], references: [id])
+  anggota      Anggota      @relation(fields: [anggotaId], references: [id])
+
+  riwayatPembayaran RiwayatPembayaranIuran[]
+
+  @@map("pembayaran_iuran")
+}
+
+model RiwayatPembayaranIuran {
+  id                BigInt   @id @default(autoincrement())
+  pembayaranIuranId BigInt   @map("pembayaran_iuran_id")
+  nominal           Int
+  tanggalBayar      DateTime @map("tanggal_bayar")
+  metodePembayaran  String?  @map("metode_pembayaran") @db.VarChar(50)
+  buktiPembayaran   String?  @map("bukti_pembayaran") @db.VarChar(500)
+  catatan           String?  @db.Text
+  dibuatPada        DateTime @default(now()) @map("dibuat_pada")
+
+  pembayaranIuran PembayaranIuran @relation(fields: [pembayaranIuranId], references: [id])
+
+  @@map("riwayat_pembayaran_iuran")
+}
+
+model Infak {
+  id            BigInt   @id @default(autoincrement())
+  anggotaId     BigInt?  @map("anggota_id")
+  kategoriInfak String?  @map("kategori_infak") @db.VarChar(100)
+  nominal       Int
+  tanggal       DateTime? @db.Date
+  tujuan        String?  @db.VarChar(200)
+  keterangan    String?  @db.Text
+  bukti         String?  @db.VarChar(500)
+  createdBy     BigInt?  @map("created_by")
 
   anggota Anggota? @relation(fields: [anggotaId], references: [id])
 
-  @@map("iuran")
+  @@map("infak")
 }
 
 model Logistik {

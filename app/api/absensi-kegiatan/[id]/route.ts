@@ -11,9 +11,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       where: { id: BigInt(id) },
       data: { status: body.status },
     });
-    return NextResponse.json({ ...absensi, id: Number(absensi.id) });
+    return NextResponse.json({ ...absensi, id: Number(absensi.id), kegiatanId: Number(absensi.kegiatanId), anggotaId: Number(absensi.anggotaId) });
   } catch (error) {
-    if ((error as { code?: string }).code === "NEXT_REDIRECT") throw error;
+    if (String(error).includes("NEXT_REDIRECT")) throw error;
     return NextResponse.json({ error: "Terjadi kesalahan" }, { status: 500 });
   }
 }

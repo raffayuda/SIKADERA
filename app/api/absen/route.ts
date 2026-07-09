@@ -3,13 +3,46 @@ import { prisma } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   try {
-    const { kelompok_id, tanggal, anggota_id } = await req.json();
+    const body = await req.json();
+    const { kelompok_id, kegiatan_id, tanggal, anggota_id } = body;
 
-    if (!kelompok_id || !tanggal || !anggota_id) {
+    if (!anggota_id) {
       return NextResponse.json({ error: "Data tidak lengkap" }, { status: 400 });
     }
 
-    // Cek apakah sudah absen hari ini
+    // Kegiatan-based absensi
+    if (kegiatan_id) {
+      if (!tanggal) {
+        return NextResponse.json({ error: "Data tidak lengkap" }, { status: 400 });
+      }
+
+      const existing = await prisma.absensiKegiatan.findFirst({
+        where: {
+          kegiatanId: BigInt(kegiatan_id),
+          anggotaId: BigInt(anggota_id),
+        },
+      });
+
+      if (existing) {
+        return NextResponse.json({ message: "Sudah absen", hadir: true });
+      }
+
+      await prisma.absensiKegiatan.create({
+        data: {
+          kegiatanId: BigInt(kegiatan_id),
+          anggotaId: BigInt(anggota_id),
+          status: "hadir",
+        },
+      });
+
+      return NextResponse.json({ message: "Absen berhasil", hadir: true });
+    }
+
+    // Kelompok-based absensi
+    if (!kelompok_id || !tanggal) {
+      return NextResponse.json({ error: "Data tidak lengkap" }, { status: 400 });
+    }
+
     const existing = await prisma.absensiKelompok.findFirst({
       where: {
         kelompokId: BigInt(kelompok_id),
@@ -42,8 +75,36 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = req.nextUrl;
     const kelompokId = searchParams.get("kelompok_id");
+    const kegiatanId = searchParams.get("kegiatan_id");
     const tanggal = searchParams.get("tanggal");
 
+    // Kegiatan-based absensi
+    if (kegiatanId) {
+      if (!tanggal) {
+        return NextResponse.json({ error: "Parameter tidak lengkap" }, { status: 400 });
+      }
+
+      const anggota = await prisma.anggota.findMany({
+        where: { status: "aktif" },
+        orderBy: { namaLengkap: "asc" },
+      });
+
+      const absensi = await prisma.absensiKegiatan.findMany({
+        where: { kegiatanId: BigInt(kegiatanId) },
+      });
+
+      const sudahAbsen = new Set(absensi.map((a) => Number(a.anggotaId)));
+
+      return NextResponse.json(
+        anggota.map((a) => ({
+          id: Number(a.id),
+          namaLengkap: a.namaLengkap,
+          sudahAbsen: sudahAbsen.has(Number(a.id)),
+        }))
+      );
+    }
+
+    // Kelompok-based absensi
     if (!kelompokId || !tanggal) {
       return NextResponse.json({ error: "Parameter tidak lengkap" }, { status: 400 });
     }
@@ -54,7 +115,6 @@ export async function GET(req: NextRequest) {
       orderBy: { namaLengkap: "asc" },
     });
 
-    // Cek yang sudah absen
     const absensi = await prisma.absensiKelompok.findMany({
       where: {
         kelompokId: BigInt(kelompokId),

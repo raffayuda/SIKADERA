@@ -9,7 +9,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const { id } = await params;
     const anggota = await prisma.anggota.findUnique({
       where: { id: BigInt(id) },
-      include: { user: true, kelompok: true, iuran: true },
+      include: { user: true, kelompok: true },
     });
     if (!anggota) {
       return NextResponse.json({ error: "Anggota tidak ditemukan" }, { status: 404 });
@@ -21,10 +21,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       kelompokId: anggota.kelompokId !== null ? Number(anggota.kelompokId) : null,
       user: anggota.user ? { ...anggota.user, id: Number(anggota.user.id) } : null,
       kelompok: anggota.kelompok ? { ...anggota.kelompok, id: Number(anggota.kelompok.id) } : null,
-      iuran: anggota.iuran.map((i) => ({ ...i, id: Number(i.id), anggotaId: i.anggotaId !== null ? Number(i.anggotaId) : null })),
     });
   } catch (error) {
-    if ((error as { code?: string }).code === "NEXT_REDIRECT") throw error;
+    if (String(error).includes("NEXT_REDIRECT")) throw error;
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }

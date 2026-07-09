@@ -11,13 +11,12 @@ export async function GET() {
     const totalKelompok = await prisma.kelompokUpa.count();
     const totalKegiatan = await prisma.kegiatan.count();
 
-    const totalIuran = await prisma.iuran.aggregate({
-      _sum: { nominal: true },
-      where: { jenis: "iuran", status: "lunas" },
+    const totalIuran = await prisma.pembayaranIuran.aggregate({
+      _sum: { nominalBayar: true },
+      where: { status: "sudah_bayar" },
     });
-    const totalInfak = await prisma.iuran.aggregate({
+    const totalInfak = await prisma.infak.aggregate({
       _sum: { nominal: true },
-      where: { jenis: "infak", status: "lunas" },
     });
 
     const totalLogistik = await prisma.logistik.count();
@@ -25,21 +24,21 @@ export async function GET() {
       where: { status: "dipinjam" },
     });
 
-    const iuranBelumLunas = await prisma.iuran.count({ where: { status: "belum_lunas" } });
+    const iuranBelumLunas = await prisma.pembayaranIuran.count({ where: { status: "belum_bayar" } });
 
     return NextResponse.json({
       anggota: { total: totalAnggota, aktif: anggotaAktif, nonAktif: totalAnggota - anggotaAktif },
       kelompok: { total: totalKelompok },
       kegiatan: { total: totalKegiatan },
       keuangan: {
-        totalIuran: totalIuran._sum.nominal || 0,
+        totalIuran: totalIuran._sum.nominalBayar || 0,
         totalInfak: totalInfak._sum.nominal || 0,
         iuranBelumLunas,
       },
       logistik: { total: totalLogistik, dipinjam: logistikDipinjam },
     });
   } catch (error) {
-    if ((error as { code?: string }).code === "NEXT_REDIRECT") throw error;
+    if (String(error).includes("NEXT_REDIRECT")) throw error;
     return NextResponse.json({ error: "Terjadi kesalahan" }, { status: 500 });
   }
 }
