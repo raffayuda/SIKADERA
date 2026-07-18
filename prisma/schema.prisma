@@ -31,8 +31,24 @@ model KelompokUpa {
   anggota            Anggota[]
   absensiKelompok    AbsensiKelompok[]
   jadwalUpa          JadwalUpa[]
+  kasKelompok        KasKelompok[]
 
   @@map("kelompok_upa")
+}
+
+model KasKelompok {
+  id            BigInt   @id @default(autoincrement())
+  kelompokId    BigInt   @map("kelompok_id")
+  anggotaId     BigInt?  @map("anggota_id")
+  tipe          String   @db.VarChar(10)
+  nominal       Int
+  keterangan    String?  @db.Text
+  tanggal       DateTime @default(now()) @db.Date
+
+  kelompok      KelompokUpa @relation(fields: [kelompokId], references: [id])
+  anggota       Anggota?    @relation(fields: [anggotaId], references: [id])
+
+  @@map("kas_kelompok")
 }
 
 model Anggota {
@@ -59,11 +75,77 @@ model Anggota {
 
   absensiKelompok    AbsensiKelompok[]
   absensiKegiatan    AbsensiKegiatan[]
-  pembayaranIuran    PembayaranIuran[]
-  infak              Infak[]
-  peminjamanLogistik PeminjamanLogistik[]
+  kasKelompok        KasKelompok[]
 
   @@map("anggota")
+}
+
+model Form {
+  id                BigInt   @id @default(autoincrement())
+  judul             String   @db.VarChar(200)
+  deskripsi         String?  @db.Text
+  status            String   @default("aktif") @db.VarChar(20)
+  warnaAksen        String   @default("#10b981") @map("warna_aksen") @db.VarChar(20)
+  headerGambar      String?  @map("header_gambar") @db.VarChar(500)
+  limitSatuResponse Boolean  @default(false) @map("limit_satu_response")
+  allowEdit         Boolean  @default(false) @map("allow_edit")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  createdBy         BigInt?  @map("created_by")
+
+  pertanyaan    PertanyaanForm[]
+  response      ResponseForm[]
+
+  @@map("form")
+}
+
+model PertanyaanForm {
+  id            BigInt  @id @default(autoincrement())
+  formId        BigInt  @map("form_id")
+  tipe          String  @db.VarChar(30)
+  pertanyaan    String  @db.Text
+  isWajib       Boolean @default(true) @map("is_wajib")
+  urutan        Int     @default(0)
+  opsi          String? @db.Text
+  validasi      String? @db.Text
+  fileMaxSize   Int?    @map("file_max_size")
+  fileFormat    String? @map("file_format") @db.VarChar(100)
+  scaleMin      Int?    @default(1) @map("scale_min")
+  scaleMax      Int?    @default(5) @map("scale_max")
+  scaleLabelMin String? @map("scale_label_min") @db.VarChar(100)
+  scaleLabelMax String? @map("scale_label_max") @db.VarChar(100)
+
+  form      Form              @relation(fields: [formId], references: [id], onDelete: Cascade)
+  jawaban   JawabanResponse[]
+
+  @@map("pertanyaan_form")
+}
+
+model ResponseForm {
+  id             BigInt   @id @default(autoincrement())
+  formId         BigInt   @map("form_id")
+  respondenNama  String?  @map("responden_nama") @db.VarChar(100)
+  respondenEmail String?  @map("responden_email") @db.VarChar(100)
+  uniqueId       String?  @map("unique_id") @db.VarChar(100)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  form      Form              @relation(fields: [formId], references: [id], onDelete: Cascade)
+  jawaban   JawabanResponse[]
+
+  @@map("response_form")
+}
+
+model JawabanResponse {
+  id            BigInt  @id @default(autoincrement())
+  responseId    BigInt  @map("response_id")
+  pertanyaanId  BigInt  @map("pertanyaan_id")
+  jawaban       String? @db.Text
+
+  response    ResponseForm    @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  pertanyaan  PertanyaanForm  @relation(fields: [pertanyaanId], references: [id])
+
+  @@map("jawaban_response")
 }
 
 model Kegiatan {
@@ -76,6 +158,7 @@ model Kegiatan {
   lokasi           String? @db.VarChar(150)
   mapsUrl          String? @map("maps_url") @db.VarChar(500)
   gambar           String? @db.VarChar(500)
+  poster           String? @db.VarChar(500)
   penanggungJawab  BigInt? @map("penanggung_jawab")
   deskripsi        String? @db.Text
 
@@ -107,109 +190,6 @@ model AbsensiKegiatan {
   anggota  Anggota?  @relation(fields: [anggotaId], references: [id])
 
   @@map("absensi_kegiatan")
-}
-
-model JenisIuran {
-  id        BigInt  @id @default(autoincrement())
-  namaIuran String  @map("nama_iuran") @db.VarChar(100)
-  nominal   Int
-  status    String  @default("aktif") @db.VarChar(20)
-
-  periodeIuran PeriodeIuran[]
-
-  @@map("jenis_iuran")
-}
-
-model PeriodeIuran {
-  id           BigInt  @id @default(autoincrement())
-  jenisIuranId BigInt  @map("jenis_iuran_id")
-  bulan        Int
-  tahun        Int
-  nominal      Int
-  dibuatOleh   BigInt? @map("dibuat_oleh")
-  tanggalDibuat DateTime @default(now()) @map("tanggal_dibuat")
-
-  jenisIuran     JenisIuran        @relation(fields: [jenisIuranId], references: [id])
-  pembayaranIuran PembayaranIuran[]
-
-  @@map("periode_iuran")
-}
-
-model PembayaranIuran {
-  id               BigInt    @id @default(autoincrement())
-  periodeIuranId   BigInt    @map("periode_iuran_id")
-  anggotaId        BigInt    @map("anggota_id")
-  nominalTagihan   Int       @map("nominal_tagihan")
-  nominalBayar     Int?      @map("nominal_bayar")
-  tanggalBayar     DateTime? @map("tanggal_bayar")
-  status           String    @default("belum_bayar") @db.VarChar(20)
-  metodePembayaran String?   @map("metode_pembayaran") @db.VarChar(50)
-  buktiPembayaran  String?   @map("bukti_pembayaran") @db.VarChar(500)
-  catatan          String?   @db.Text
-
-  periodeIuran PeriodeIuran @relation(fields: [periodeIuranId], references: [id])
-  anggota      Anggota      @relation(fields: [anggotaId], references: [id])
-
-  riwayatPembayaran RiwayatPembayaranIuran[]
-
-  @@map("pembayaran_iuran")
-}
-
-model RiwayatPembayaranIuran {
-  id                BigInt   @id @default(autoincrement())
-  pembayaranIuranId BigInt   @map("pembayaran_iuran_id")
-  nominal           Int
-  tanggalBayar      DateTime @map("tanggal_bayar")
-  metodePembayaran  String?  @map("metode_pembayaran") @db.VarChar(50)
-  buktiPembayaran   String?  @map("bukti_pembayaran") @db.VarChar(500)
-  catatan           String?  @db.Text
-  dibuatPada        DateTime @default(now()) @map("dibuat_pada")
-
-  pembayaranIuran PembayaranIuran @relation(fields: [pembayaranIuranId], references: [id])
-
-  @@map("riwayat_pembayaran_iuran")
-}
-
-model Infak {
-  id            BigInt   @id @default(autoincrement())
-  anggotaId     BigInt?  @map("anggota_id")
-  kategoriInfak String?  @map("kategori_infak") @db.VarChar(100)
-  nominal       Int
-  tanggal       DateTime? @db.Date
-  tujuan        String?  @db.VarChar(200)
-  keterangan    String?  @db.Text
-  bukti         String?  @db.VarChar(500)
-  createdBy     BigInt?  @map("created_by")
-
-  anggota Anggota? @relation(fields: [anggotaId], references: [id])
-
-  @@map("infak")
-}
-
-model Logistik {
-  id          BigInt  @id @default(autoincrement())
-  namaBarang  String  @map("nama_barang") @db.VarChar(100)
-  jumlah      Int?
-  kondisi     String? @db.VarChar(50)
-
-  peminjamanLogistik PeminjamanLogistik[]
-
-  @@map("logistik")
-}
-
-model PeminjamanLogistik {
-  id              BigInt   @id @default(autoincrement())
-  anggotaId       BigInt?  @map("anggota_id")
-  logistikId      BigInt?  @map("logistik_id")
-  jumlahPinjam    Int?     @map("jumlah_pinjam")
-  tanggalPinjam   DateTime? @map("tanggal_pinjam") @db.Date
-  tanggalKembali  DateTime? @map("tanggal_kembali") @db.Date
-  status          String   @default("dipinjam") @db.VarChar(20)
-
-  anggota  Anggota?  @relation(fields: [anggotaId], references: [id])
-  logistik Logistik? @relation(fields: [logistikId], references: [id])
-
-  @@map("peminjaman_logistik")
 }
 
 model JadwalUpa {

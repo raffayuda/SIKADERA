@@ -56,6 +56,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         lokasi: body.lokasi,
         mapsUrl: body.mapsUrl,
         gambar: body.gambar,
+        poster: body.poster || null,
         penanggungJawab: body.penanggungJawab ? Number(body.penanggungJawab) : null,
         deskripsi: body.deskripsi,
       },

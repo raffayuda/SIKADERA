@@ -17,6 +17,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
           orderBy: { tanggal: "desc" },
           take: 50,
         },
+        kasKelompok: {
+          orderBy: { tanggal: "desc" },
+          take: 3,
+          include: { anggota: { select: { id: true, namaLengkap: true } } },
+        },
       },
     });
     if (!kelompok) {
@@ -58,6 +63,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
           kelompokId: a.anggota.kelompokId !== null ? Number(a.anggota.kelompokId) : null,
           user: a.anggota.user ? { ...a.anggota.user, id: Number(a.anggota.user.id) } : null,
         } : null,
+      })),
+      kasKelompok: kelompok.kasKelompok.map((k) => ({
+        ...k,
+        id: Number(k.id),
+        kelompokId: Number(k.kelompokId),
       })),
     });
   } catch (error) {

@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
         lokasi: body.lokasi,
         mapsUrl: body.mapsUrl,
         gambar: body.gambar,
+        poster: body.poster || null,
         penanggungJawab: body.penanggungJawab ? Number(body.penanggungJawab) : null,
         deskripsi: body.deskripsi,
       },

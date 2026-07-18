@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,16 +15,17 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { QRCodeSVG } from "qrcode.react";
+import { Scanner } from "@yudiel/react-qr-scanner";
 import {
   IconCalendarEvent, IconUsers, IconMapPin, IconDots, IconEdit, IconTrash,
   IconSearch, IconPlus, IconLayoutGrid, IconList, IconCheck, IconMap,
-  IconClock, IconPhoto, IconQrcode, IconUpload,
+  IconClock, IconPhoto, IconQrcode, IconUpload, IconCamera, IconShare,
 } from "@tabler/icons-react";
 
 interface AbsensiItem {
@@ -79,6 +81,14 @@ export default function KegiatanPage() {
   const [qrTanggal, setQrTanggal] = useState("");
   const [qrStamp, setQrStamp] = useState(Date.now());
   const [qrTimer, setQrTimer] = useState(60);
+
+  // QR Scanner
+  const [isScanOpen, setIsScanOpen] = useState(false);
+  const [scanKegiatan, setScanKegiatan] = useState<Kegiatan | null>(null);
+  const [scanStatus, setScanStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [scannedNames, setScannedNames] = useState<{ id: number; nama: string }[]>([]);
+  const [scannedIds, setScannedIds] = useState<Set<number>>(new Set());
+  const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!isQrOpen) return;
@@ -273,6 +283,65 @@ export default function KegiatanPage() {
     setIsQrOpen(true);
   };
 
+  const openScanner = (k: Kegiatan) => {
+    setScanKegiatan(k);
+    setScanStatus(null);
+    setScannedIds(new Set());
+    setScannedNames([]);
+    setIsScanOpen(true);
+  };
+
+  const handleQrScan = useCallback(async (result: string) => {
+    if (!scanKegiatan) return;
+    try {
+      let anggotaId: number | null = null;
+      let tanggal: string | null = null;
+
+      if (result.includes("?")) {
+        const url = new URL(result.startsWith("http") ? result : `https://dummy${result}`);
+        const aid = url.searchParams.get("anggota_id") || url.searchParams.get("anggota");
+        if (aid) anggotaId = Number(aid);
+        tanggal = url.searchParams.get("tanggal") || null;
+      } else if (!isNaN(Number(result))) {
+        anggotaId = Number(result);
+      }
+
+      if (anggotaId && !isNaN(anggotaId) && tanggal) {
+        if (scannedIds.has(anggotaId)) {
+          setScanStatus({ type: "success", message: `Sudah absen sebelumnya` });
+          return;
+        }
+
+        const res = await fetch("/api/absensi-kegiatan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            kegiatanId: scanKegiatan.id,
+            anggotaId,
+            status: "hadir",
+          }),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          setScanStatus({ type: "error", message: errData.error || "Gagal absen" });
+          return;
+        }
+
+        setScannedIds((prev) => new Set(prev).add(anggotaId));
+        setScannedNames((prev) => [...prev, { id: anggotaId, nama: "Anggota" }]);
+        setScanStatus({ type: "success", message: `Anggota — Hadir!` });
+      } else {
+        setScanStatus({ type: "error", message: "QR tidak dikenal" });
+      }
+    } catch {
+      setScanStatus({ type: "error", message: "QR tidak valid" });
+    }
+
+    if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current);
+    scanTimeoutRef.current = setTimeout(() => setScanStatus(null), 3000);
+  }, [scanKegiatan, scannedIds]);
+
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "-";
     const d = new Date(dateStr);
@@ -393,10 +462,11 @@ export default function KegiatanPage() {
                   <IconList className="h-3.5 w-3.5" />
                 </Button>
               </div>
-              <Button onClick={openCreateForm}
-                className="h-9 rounded-xl border border-emerald-400/40 bg-emerald-400/15 px-4 text-xs font-medium text-emerald-100 hover:bg-emerald-400/25">
-                <IconPlus className="mr-1.5 h-3.5 w-3.5" /> Tambah Kegiatan
-              </Button>
+              <Link href="/admin/kegiatan/create">
+                <Button className="h-9 rounded-xl border border-emerald-400/40 bg-emerald-400/15 px-4 text-xs font-medium text-emerald-100 hover:bg-emerald-400/25">
+                  <IconPlus className="mr-1.5 h-3.5 w-3.5" /> Tambah Kegiatan
+                </Button>
+              </Link>
             </div>
           </div>
         </CardHeader>
@@ -432,18 +502,31 @@ export default function KegiatanPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="right">
-                          <DropdownMenuItem onClick={() => openEditForm(k)}>
+                          <DropdownMenuItem onClick={() => window.location.href = `/admin/kegiatan/${k.id}/edit`}>
                             <IconEdit className="mr-2 h-3.5 w-3.5" /> Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => { setSelectedKegiatan(k); setIsDeleteOpen(true); }}>
                             <IconTrash className="mr-2 h-3.5 w-3.5" /> Hapus
                           </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => {
+                            const url = `${window.location.origin}/kegiatan/${k.id}`;
+                            navigator.clipboard.writeText(url);
+                            const el = document.createElement("div");
+                            el.className = "fixed bottom-4 right-4 z-50 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs text-emerald-300 shadow-lg";
+                            el.textContent = "Link disalin!";
+                            document.body.appendChild(el);
+                            setTimeout(() => el.remove(), 2000);
+                          }}>
+                            <IconShare className="mr-2 h-3.5 w-3.5" /> Salin Link Publik
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
-                    {k.deskripsi && (
-                      <p className="mt-1 line-clamp-2 text-xs text-zinc-500">{k.deskripsi}</p>
-                    )}
+                    {(() => {
+                      const clean = k.deskripsi?.replace(/<[^>]*>/g, "").slice(0, 120) || "";
+                      return clean ? <p className="mt-1 line-clamp-2 text-xs text-zinc-500">{clean}</p> : null;
+                    })()}
                     <div className="mt-3 grid grid-cols-2 gap-2">
                       <div className="rounded-xl border border-white/10 bg-white/5 p-2.5">
                         <div className="flex items-center gap-1 text-[10px] text-zinc-500">
@@ -490,8 +573,14 @@ export default function KegiatanPage() {
                         <IconCheck className="mr-1 h-3 w-3" /> Absensi
                       </Button>
                       <Button onClick={() => openQr(k)} size="sm" variant="ghost"
-                        className="h-8 w-8 rounded-xl text-zinc-400 hover:bg-white/5 hover:text-zinc-200">
+                        className="h-8 w-8 rounded-xl text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                        title="Generate QR">
                         <IconQrcode className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button onClick={() => openScanner(k)} size="sm" variant="ghost"
+                        className="h-8 w-8 rounded-xl text-zinc-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+                        title="Scan QR">
+                        <IconCamera className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </CardContent>
@@ -532,7 +621,10 @@ export default function KegiatanPage() {
                           </div>
                           <div className="min-w-0">
                             <p className="text-xs font-medium text-zinc-200">{k.namaKegiatan}</p>
-                            {k.deskripsi && <p className="truncate text-[11px] text-zinc-500">{k.deskripsi}</p>}
+                            {(() => {
+                              const clean = k.deskripsi?.replace(/<[^>]*>/g, "").slice(0, 80) || "";
+                              return clean ? <p className="truncate text-[11px] text-zinc-500">{clean}</p> : null;
+                            })()}
                           </div>
                         </div>
                       </TableCell>
@@ -575,11 +667,23 @@ export default function KegiatanPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="right">
-                              <DropdownMenuItem onClick={() => openEditForm(k)}>
+                              <DropdownMenuItem onClick={() => window.location.href = `/admin/kegiatan/${k.id}/edit`}>
                                 <IconEdit className="mr-2 h-3.5 w-3.5" /> Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => { setSelectedKegiatan(k); setIsDeleteOpen(true); }}>
                                 <IconTrash className="mr-2 h-3.5 w-3.5" /> Hapus
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => {
+                                const url = `${window.location.origin}/kegiatan/${k.id}`;
+                                navigator.clipboard.writeText(url);
+                                const el = document.createElement("div");
+                                el.className = "fixed bottom-4 right-4 z-50 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs text-emerald-300 shadow-lg";
+                                el.textContent = "Link disalin!";
+                                document.body.appendChild(el);
+                                setTimeout(() => el.remove(), 2000);
+                              }}>
+                                <IconShare className="mr-2 h-3.5 w-3.5" /> Salin Link Publik
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -606,71 +710,68 @@ export default function KegiatanPage() {
               {editingKegiatan ? "Ubah data kegiatan di bawah ini." : "Lengkapi data kegiatan di bawah ini."}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid max-h-[60vh] gap-4 overflow-y-auto py-4 pr-2">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-xs">Nama Kegiatan</Label>
-              <Input className="col-span-3 h-9" value={formData.namaKegiatan}
-                onChange={(e) => setFormData({ ...formData, namaKegiatan: e.target.value })} />
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Nama Kegiatan</Label>
+                <Input className="h-9 text-xs" value={formData.namaKegiatan}
+                  onChange={(e) => setFormData({ ...formData, namaKegiatan: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Jenis</Label>
+                <select className="h-9 w-full rounded-xl border border-white/10 bg-zinc-950 px-3 text-xs text-zinc-300 outline-none focus:border-emerald-500/50"
+                  value={formData.jenis} onChange={(e) => setFormData({ ...formData, jenis: e.target.value })}>
+                  <option value="">Pilih Jenis</option>
+                  <option value="Internal">Internal</option>
+                  <option value="Publik">Publik</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Tanggal</Label>
+                <Input type="date" className="h-9 text-xs" value={formData.tanggal}
+                  onChange={(e) => setFormData({ ...formData, tanggal: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Jam Mulai</Label>
+                <Input type="time" className="h-9 text-xs" value={formData.jamMulai}
+                  onChange={(e) => setFormData({ ...formData, jamMulai: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Jam Selesai</Label>
+                <Input type="time" className="h-9 text-xs" value={formData.jamSelesai}
+                  onChange={(e) => setFormData({ ...formData, jamSelesai: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-400">Lokasi</Label>
+                <Input className="h-9 text-xs" value={formData.lokasi}
+                  onChange={(e) => setFormData({ ...formData, lokasi: e.target.value })} />
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-xs">Jenis</Label>
-              <select className="col-span-3 h-9 rounded-xl border border-white/10 bg-zinc-950 px-3 text-xs text-zinc-300 outline-none"
-                value={formData.jenis} onChange={(e) => setFormData({ ...formData, jenis: e.target.value })}>
-                <option value="">Pilih Jenis</option>
-                <option value="Internal">Internal</option>
-                <option value="Publik">Publik</option>
-              </select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-xs">Tanggal</Label>
-              <Input type="date" className="col-span-3 h-9" value={formData.tanggal}
-                onChange={(e) => setFormData({ ...formData, tanggal: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-xs">Jam Mulai</Label>
-              <Input type="time" className="col-span-3 h-9" value={formData.jamMulai}
-                onChange={(e) => setFormData({ ...formData, jamMulai: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-xs">Jam Selesai</Label>
-              <Input type="time" className="col-span-3 h-9" value={formData.jamSelesai}
-                onChange={(e) => setFormData({ ...formData, jamSelesai: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-xs">Lokasi</Label>
-              <Input className="col-span-3 h-9" value={formData.lokasi}
-                onChange={(e) => setFormData({ ...formData, lokasi: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-xs">Link Google Maps</Label>
-              <Input className="col-span-3 h-9" value={formData.mapsUrl} placeholder="https://maps.google.com/..."
+            <div className="space-y-1.5">
+              <Label className="text-xs text-zinc-400">Link Google Maps <span className="text-zinc-600">(opsional)</span></Label>
+              <Input className="h-9 text-xs" value={formData.mapsUrl} placeholder="https://maps.google.com/..."
                 onChange={(e) => setFormData({ ...formData, mapsUrl: e.target.value })} />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-xs">Gambar</Label>
-              <div className="col-span-3">
-                <label className="flex h-9 w-full cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-zinc-950 px-3 text-xs text-zinc-400 hover:border-white/20">
-                  <IconUpload className="h-4 w-4" />
-                  {gambarFile ? gambarFile.name : "Pilih file gambar..."}
-                  <input type="file" accept="image/*" className="hidden"
-                    onChange={(e) => setGambarFile(e.target.files?.[0] || null)} />
-                </label>
-              </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-zinc-400">Gambar <span className="text-zinc-600">(opsional)</span></Label>
+              <label className="flex h-9 cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-zinc-950 px-3 text-xs text-zinc-400 hover:border-white/20">
+                <IconUpload className="h-4 w-4" />
+                {gambarFile ? gambarFile.name : "Pilih file gambar..."}
+                <input type="file" accept="image/*" className="hidden"
+                  onChange={(e) => setGambarFile(e.target.files?.[0] || null)} />
+              </label>
             </div>
             {(gambarFile || editingKegiatan?.gambar) && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <div />
-                <div className="col-span-3 overflow-hidden rounded-xl border border-white/10">
-                  <img
-                    src={gambarFile ? URL.createObjectURL(gambarFile) : editingKegiatan?.gambar || ""}
-                    alt="Preview"
-                    className="h-32 w-full object-cover" />
-                </div>
+              <div className="overflow-hidden rounded-xl border border-white/10">
+                <img
+                  src={gambarFile ? URL.createObjectURL(gambarFile) : editingKegiatan?.gambar || ""}
+                  alt="Preview"
+                  className="h-32 w-full object-cover" />
               </div>
             )}
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right text-xs">Deskripsi</Label>
-              <textarea className="col-span-3 h-24 rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-xs text-zinc-300 outline-none"
+            <div className="space-y-1.5">
+              <Label className="text-xs text-zinc-400">Deskripsi</Label>
+              <textarea className="min-h-[80px] w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-xs text-zinc-300 outline-none focus:border-emerald-500/50 resize-y"
                 value={formData.deskripsi}
                 onChange={(e) => setFormData({ ...formData, deskripsi: e.target.value })} />
             </div>
@@ -736,6 +837,55 @@ export default function KegiatanPage() {
               className="bg-emerald-500 hover:bg-emerald-600 text-white">
               {attendanceSaving ? "Menyimpan..." : "Simpan Absensi"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* QR Scanner Dialog */}
+      <Dialog open={isScanOpen} onOpenChange={setIsScanOpen}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Scan QR Absensi</DialogTitle>
+            <DialogDescription>
+              Arahkan kamera ke QR yang sudah di-generate untuk <strong>{scanKegiatan?.namaKegiatan}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="overflow-hidden rounded-xl border border-white/10 bg-zinc-950">
+              <Scanner
+                onScan={(detectedCodes) => {
+                  const code = detectedCodes?.[0]?.rawValue;
+                  if (code) handleQrScan(code);
+                }}
+                styles={{ container: { borderRadius: 0 } }}
+                allowMultiple={false}
+                scanDelay={1000}
+              />
+            </div>
+            {scanStatus && (
+              <div className={`rounded-xl border p-3 text-center text-xs ${
+                scanStatus.type === "success"
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                  : "border-rose-500/30 bg-rose-500/10 text-rose-300"
+              }`}>
+                {scanStatus.message}
+              </div>
+            )}
+            {scannedNames.length > 0 && (
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                <p className="text-[10px] text-zinc-500 font-semibold mb-2">Telah Absen ({scannedNames.length})</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {scannedNames.map((s) => (
+                    <Badge key={s.id} variant="outline" className="rounded-lg border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-[9px]">
+                      {s.nama}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsScanOpen(false)}>Tutup</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

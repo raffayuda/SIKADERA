@@ -1,12 +1,21 @@
 "use client";
 
 import React from "react";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/sidebar";
 import { Navbar } from "@/components/navbar";
 import { useSidebar } from "@/lib/context/sidebar-context";
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
+  const pathname = usePathname();
+
+  const isAuthPage = pathname === "/login" || pathname === "/register";
+  const isPublicPage = pathname.startsWith("/kegiatan/");
+
+  if (isAuthPage || isPublicPage) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="relative isolate min-h-[100dvh] overflow-x-hidden">

@@ -118,28 +118,11 @@ const defaultNavSections: NavigationSection[] = [
     ],
   },
   {
-    title: "Keuangan",
+    title: "Form & Survei",
     items: [
       {
-        label: "Iuran & Infak",
-        href: "/admin/iuran-infak",
-      },
-      {
-        label: "Laporan Keuangan",
-        href: "/admin/laporan-keuangan",
-      },
-    ],
-  },
-  {
-    title: "Logistik",
-    items: [
-      {
-        label: "Inventaris Logistik",
-        href: "/admin/inventaris-logistik",
-      },
-      {
-        label: "Peminjaman Logistik",
-        href: "/admin/peminjaman-logistik",
+        label: "Form & Survei",
+        href: "/admin/form",
       },
     ],
   },
@@ -275,33 +258,43 @@ export function Sidebar({
                       activeItem === item.label;
 
                     return (
-                      <Button
-                        key={item.href}
-                        asChild
-                        size="sm"
-                        variant="ghost"
-                        className={`group h-9 w-full justify-start gap-2.5 rounded-xl px-2.5 text-xs font-medium transition-all ${
-                          isActive
-                            ? "bg-zinc-200/60 dark:bg-white/10 text-zinc-900 dark:text-zinc-50 hover:bg-zinc-200/60 dark:hover:bg-white/10"
-                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-zinc-200"
-                        } ${isCollapsed ? "lg:justify-center lg:px-0" : ""}`}
-                        onClick={() => onItemSelect?.(item.label)}
-                        title={isCollapsed ? item.label : ""}
-                      >
-                        <Link href={item.href} className="flex items-center">
-                          <IconComponent
-                            className={`h-[18px] w-[18px] shrink-0 transition-colors ${
-                              isActive
-                                ? "text-emerald-500 dark:text-emerald-400"
-                                : "text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-500 group-hover:dark:text-zinc-400"
-                            } ${isCollapsed ? "lg:mx-auto" : ""}`}
-                          />
+                      <div key={item.href} className="relative">
+                        {/* Active indicator bar */}
+                        <div
+                          className={`absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full transition-all duration-200 ${
+                            isActive
+                              ? "bg-emerald-500 dark:bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.4)]"
+                              : "bg-transparent"
+                          }`}
+                        />
 
-                          <span className={`truncate transition-all duration-300 ${isCollapsed ? "lg:hidden" : "lg:block ml-2.5"}`}>
-                            {item.label}
-                          </span>
-                        </Link>
-                      </Button>
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="ghost"
+                          className={`group h-9 w-full justify-start gap-2.5 rounded-xl px-2.5 text-xs font-medium transition-all ${
+                            isActive
+                              ? "bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 shadow-[inset_0_1px_0_rgba(16,185,129,0.1)]"
+                              : "text-zinc-500 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/[0.04] hover:text-zinc-700 dark:hover:text-zinc-300"
+                          } ${isCollapsed ? "lg:justify-center lg:px-0" : "pl-4"}`}
+                          onClick={() => onItemSelect?.(item.label)}
+                          title={isCollapsed ? item.label : ""}
+                        >
+                          <Link href={item.href} className="flex items-center">
+                            <IconComponent
+                              className={`h-[18px] w-[18px] shrink-0 transition-colors ${
+                                isActive
+                                  ? "text-emerald-500 dark:text-emerald-400"
+                                  : "text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-500 group-hover:dark:text-zinc-400"
+                              } ${isCollapsed ? "lg:mx-auto" : ""}`}
+                            />
+
+                            <span className={`truncate transition-all duration-300 ${isCollapsed ? "lg:hidden" : "lg:block ml-2.5"}`}>
+                              {item.label}
+                            </span>
+                          </Link>
+                        </Button>
+                      </div>
                     );
                   })}
                 </div>

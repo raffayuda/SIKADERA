@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -65,7 +65,11 @@ import {
   IconChevronRight,
   IconCircle,
   IconQrcode,
+  IconCamera,
+  IconWallet,
+  IconHistory,
 } from "@tabler/icons-react";
+import { Scanner } from "@yudiel/react-qr-scanner";
 
 interface UserData {
   id: number;
@@ -103,6 +107,17 @@ interface AbsensiData {
   } | null;
 }
 
+interface KasKelompokData {
+  id: number;
+  kelompokId: number;
+  anggotaId: number | null;
+  tipe: "masuk" | "keluar";
+  nominal: number;
+  keterangan: string | null;
+  tanggal: string;
+  anggota: { id: number; namaLengkap: string } | null;
+}
+
 interface KelompokDetail {
   id: number;
   namaKelompok: string;
@@ -114,6 +129,7 @@ interface KelompokDetail {
   anggota: AnggotaData[];
   jadwalUpa: JadwalData[];
   absensiKelompok: AbsensiData[];
+  kasKelompok: KasKelompokData[];
 }
 
 interface JadwalForm {
@@ -200,6 +216,10 @@ function formatAbsensi(status: string) {
   }
 }
 
+function formatRupiah(n: number) {
+  return "Rp" + n.toLocaleString("id-ID");
+}
+
 export default function UpaDetailPage() {
   const { id } = useParams();
   const kelompokId = Number(id);
@@ -226,6 +246,24 @@ export default function UpaDetailPage() {
   const [qrTanggal, setQrTanggal] = useState(new Date().toISOString().split("T")[0]);
   const [qrTimer, setQrTimer] = useState(60);
   const [qrStamp, setQrStamp] = useState(Date.now());
+
+  // QR Scanner dialog
+  const [isScanOpen, setIsScanOpen] = useState(false);
+  const [scanStatus, setScanStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [scannedIds, setScannedIds] = useState<Set<number>>(new Set());
+  const [scannedNames, setScannedNames] = useState<{ id: number; nama: string }[]>([]);
+  const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Kas Kelompok
+  const [isKasAddOpen, setIsKasAddOpen] = useState(false);
+  const [isKasHistoryOpen, setIsKasHistoryOpen] = useState(false);
+  const [isKasDeleteOpen, setIsKasDeleteOpen] = useState(false);
+  const [selectedKas, setSelectedKas] = useState<KasKelompokData | null>(null);
+  const [kasForm, setKasForm] = useState({ tipe: "masuk", nominal: 0, anggotaId: "", keterangan: "", tanggal: new Date().toISOString().split("T")[0] });
+  const [kasSaving, setKasSaving] = useState(false);
+  const [kasFilter, setKasFilter] = useState({ tanggalDari: "", tanggalSampai: "" });
+  const [kasList, setKasList] = useState<KasKelompokData[]>([]);
+  const [kasLoading, setKasLoading] = useState(false);
 
   async function loadData() {
     setLoading(true);
@@ -360,6 +398,135 @@ export default function UpaDetailPage() {
     }
   }
 
+  // Kas handlers
+  async function handleAddKas() {
+    setKasSaving(true);
+    try {
+      await api.post(`/kelompok-upa/${kelompokId}/kas`, {
+        ...kasForm,
+        anggotaId: kasForm.anggotaId || null,
+      });
+      setIsKasAddOpen(false);
+      setKasForm({ tipe: "masuk", nominal: 0, anggotaId: "", keterangan: "", tanggal: new Date().toISOString().split("T")[0] });
+      setKasFilter({ tanggalDari: "", tanggalSampai: "" });
+      await Promise.all([loadData(), fetchKas()]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal menambah transaksi");
+    } finally {
+      setKasSaving(false);
+    }
+  }
+
+  async function handleDeleteKas() {
+    if (!selectedKas) return;
+    try {
+      await api.delete(`/kelompok-upa/${kelompokId}/kas/${selectedKas.id}`);
+      setIsKasDeleteOpen(false);
+      setSelectedKas(null);
+      await Promise.all([loadData(), fetchKas()]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal menghapus transaksi");
+    }
+  }
+
+  async function fetchKas() {
+    setKasLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (kasFilter.tanggalDari) params.set("tanggalDari", kasFilter.tanggalDari);
+      if (kasFilter.tanggalSampai) params.set("tanggalSampai", kasFilter.tanggalSampai);
+      const qs = params.toString();
+      const res = await api.get<KasKelompokData[]>(`/kelompok-upa/${kelompokId}/kas${qs ? "?" + qs : ""}`);
+      setKasList(res);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal memuat riwayat kas");
+    } finally {
+      setKasLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (kelompokId) fetchKas();
+  }, [kelompokId]);
+
+  // QR Scanner handler
+  const handleQrScan = useCallback(async (result: string) => {
+    if (!data) return;
+    try {
+      // Parse QR: format URL absensi yang di-generate admin
+      // Contoh: /absen?kelompok=1&tanggal=2026-07-18&t=...
+      let anggotaId: number | null = null;
+      let tanggal: string | null = null;
+
+      if (result.startsWith("ANG:")) {
+        // Format ANG:ID — tanpa tanggal, skip
+        setScanStatus({ type: "error", message: "QR bukan QR absensi. Gunakan QR yang di-generate dari tombol Generate QR." });
+        return;
+      } else if (result.includes("?")) {
+        const url = new URL(result.startsWith("http") ? result : `https://dummy${result}`);
+        const aid = url.searchParams.get("anggota_id") || url.searchParams.get("anggota");
+        if (aid) anggotaId = Number(aid);
+        tanggal = url.searchParams.get("tanggal") || null;
+      } else if (!isNaN(Number(result))) {
+        anggotaId = Number(result);
+      }
+
+      if (anggotaId && !isNaN(anggotaId) && data.anggota.some((a) => a.id === anggotaId)) {
+        // Anggota ID langsung — valid, tapi butuh tanggal
+        if (!tanggal) {
+          setScanStatus({ type: "error", message: "QR tidak berisi tanggal. Gunakan QR dari Generate QR." });
+          return;
+        }
+
+        if (scannedIds.has(anggotaId)) {
+          setScanStatus({ type: "success", message: `Sudah absen sebelumnya` });
+          return;
+        }
+
+        await api.post("/absensi-kelompok", [{
+          kelompokId,
+          anggotaId,
+          tanggal,
+          status: "hadir",
+        }]);
+
+        setScannedIds((prev) => new Set(prev).add(anggotaId));
+        const nama = data.anggota.find((a) => a.id === anggotaId)?.namaLengkap || "Anggota";
+        setScannedNames((prev) => [...prev, { id: anggotaId!, nama }]);
+        setScanStatus({ type: "success", message: `${nama} — Hadir!` });
+        return;
+      }
+
+      // Jika bukan QR anggota, cek apakah ini QR absensi yang berisi kelompok & tanggal
+      if (result.includes("?")) {
+        const url = new URL(result.startsWith("http") ? result : `https://dummy${result}`);
+        const qKelompok = url.searchParams.get("kelompok");
+        const qTanggal = url.searchParams.get("tanggal");
+
+        if (qKelompok && String(kelompokId) === qKelompok && qTanggal) {
+          // Ini QR absensi yang valid — admin tinggal scan QR anggota berikutnya
+          setScanStatus({ type: "success", message: "QR absensi valid. Scan QR anggota sekarang." });
+          return;
+        }
+      }
+
+      setScanStatus({ type: "error", message: "QR tidak dikenal" });
+    } catch {
+      setScanStatus({ type: "error", message: "QR tidak valid" });
+    }
+
+    // Reset status setelah 3 detik
+    if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current);
+    scanTimeoutRef.current = setTimeout(() => setScanStatus(null), 3000);
+  }, [data, kelompokId, scannedIds]);
+
+  function openScanner() {
+    setScanStatus(null);
+    setScannedIds(new Set());
+    setScannedNames([]);
+    setIsScanOpen(true);
+  }
+
   if (loading && !data) {
     return (
       <div className="space-y-4">
@@ -392,12 +559,20 @@ export default function UpaDetailPage() {
 
   return (
     <>
-      <div className="mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <Button variant="ghost" asChild className="h-8 rounded-xl px-2 text-zinc-400 hover:text-zinc-100 hover:bg-white/5">
           <Link href="/admin/kelompok-upa">
             <IconArrowLeft className="mr-2 h-4 w-4" />
             Kembali ke Daftar
           </Link>
+        </Button>
+        <Button
+          size="sm"
+          onClick={openScanner}
+          className="h-8 rounded-xl border border-emerald-400/40 bg-emerald-400/15 px-3 text-[10px] font-medium text-emerald-100 hover:bg-emerald-400/25"
+        >
+          <IconCamera className="mr-1.5 h-3.5 w-3.5" />
+          Scan QR
         </Button>
       </div>
 
@@ -462,6 +637,53 @@ export default function UpaDetailPage() {
                   </p>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Kas Kelompok */}
+          <Card className="rounded-2xl border-white/10 bg-zinc-900/60">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-sm font-semibold">Kas Kelompok</CardTitle>
+                  <CardDescription className="text-xs">Uang kas kelompok UPA.</CardDescription>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => { setKasForm({ tipe: "masuk", nominal: 0, anggotaId: "", keterangan: "", tanggal: new Date().toISOString().split("T")[0] }); setIsKasAddOpen(true); }}
+                  className="h-7 rounded-xl border border-emerald-400/40 bg-emerald-400/15 px-2.5 text-[10px] font-medium text-emerald-100 hover:bg-emerald-400/25"
+                >
+                  <IconPlus className="mr-1 h-3 w-3" />
+                  Tambah
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-0">
+              {(() => {
+                const totalMasuk = data.kasKelompok.filter((k) => k.tipe === "masuk").reduce((s, k) => s + k.nominal, 0);
+                const totalKeluar = data.kasKelompok.filter((k) => k.tipe === "keluar").reduce((s, k) => s + k.nominal, 0);
+                const saldo = totalMasuk - totalKeluar;
+                return (
+                  <>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-2.5 text-center">
+                        <p className="text-[9px] text-emerald-400/70 uppercase tracking-wider">Masuk</p>
+                        <p className="text-sm font-bold text-emerald-300">{formatRupiah(totalMasuk)}</p>
+                      </div>
+                      <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-2.5 text-center">
+                        <p className="text-[9px] text-amber-400/70 uppercase tracking-wider">Keluar</p>
+                        <p className="text-sm font-bold text-amber-300">{formatRupiah(totalKeluar)}</p>
+                      </div>
+                    </div>
+                    <div className={`rounded-xl border p-3 text-center ${saldo >= 0 ? "border-emerald-500/20 bg-emerald-500/[0.07]" : "border-rose-500/20 bg-rose-500/[0.07]"}`}>
+                      <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-semibold">Saldo</p>
+                      <p className={`text-lg font-bold ${saldo >= 0 ? "text-emerald-200" : "text-rose-300"}`}>
+                        {formatRupiah(saldo)}
+                      </p>
+                    </div>
+                  </>
+                );
+              })()}
             </CardContent>
           </Card>
 
@@ -609,6 +831,145 @@ export default function UpaDetailPage() {
 
           {/* Riwayat Absensi */}
           <AbsensiSection absensiList={data.absensiKelompok} anggotaList={data.anggota} />
+
+          {/* Riwayat Kas */}
+          <Card className="rounded-2xl border-white/10 bg-zinc-900/60">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-semibold text-zinc-50">Riwayat Kas</CardTitle>
+                  <CardDescription className="text-xs">Semua transaksi pemasukan dan pengeluaran.</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-4">
+              {/* Filter */}
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-zinc-500">Dari Tanggal</Label>
+                  <Input
+                    type="date"
+                    className="h-8 w-[150px] text-xs"
+                    value={kasFilter.tanggalDari}
+                    onChange={(e) => setKasFilter({ ...kasFilter, tanggalDari: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-zinc-500">Sampai Tanggal</Label>
+                  <Input
+                    type="date"
+                    className="h-8 w-[150px] text-xs"
+                    value={kasFilter.tanggalSampai}
+                    onChange={(e) => setKasFilter({ ...kasFilter, tanggalSampai: e.target.value })}
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  onClick={fetchKas}
+                  className="h-8 rounded-xl border border-emerald-400/40 bg-emerald-400/15 px-3 text-[10px] font-medium text-emerald-100 hover:bg-emerald-400/25"
+                >
+                  Filter
+                </Button>
+                {(kasFilter.tanggalDari || kasFilter.tanggalSampai) && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => { setKasFilter({ tanggalDari: "", tanggalSampai: "" }); }}
+                    className="h-8 rounded-xl px-3 text-[10px] text-zinc-400 hover:text-zinc-200"
+                  >
+                    Reset
+                  </Button>
+                )}
+              </div>
+
+              {/* Table */}
+              <div className="rounded-xl border border-white/10 overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-white/10 bg-white/5 hover:bg-white/5">
+                      <TableHead className="text-xs text-zinc-300">Tanggal</TableHead>
+                      <TableHead className="text-xs text-zinc-300">Anggota</TableHead>
+                      <TableHead className="text-xs text-zinc-300">Tipe</TableHead>
+                      <TableHead className="text-xs text-zinc-300 text-right">Nominal</TableHead>
+                      <TableHead className="text-xs text-zinc-300">Keterangan</TableHead>
+                      <TableHead className="w-10"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {kasLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8">
+                          <div className="mx-auto h-5 w-5 animate-spin rounded-full border-2 border-emerald-400 border-t-transparent" />
+                        </TableCell>
+                      </TableRow>
+                    ) : kasList.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-xs text-zinc-500">
+                          Belum ada transaksi
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      kasList.map((kas) => (
+                        <TableRow key={kas.id} className="border-white/10 hover:bg-white/[0.03]">
+                          <TableCell className="py-2.5 text-xs text-zinc-300 whitespace-nowrap">
+                            {new Date(kas.tanggal).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                          </TableCell>
+                          <TableCell className="py-2.5 text-xs text-zinc-300">
+                            {kas.anggota ? (
+                              <span className="text-zinc-200">{kas.anggota.namaLengkap}</span>
+                            ) : (
+                              <span className="text-zinc-500 italic">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="py-2.5">
+                            <Badge variant="outline" className={`rounded-lg px-2 py-px text-[10px] font-semibold ${kas.tipe === "masuk" ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-amber-500/30 bg-amber-500/10 text-amber-300"}`}>
+                              {kas.tipe === "masuk" ? "Masuk" : "Keluar"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className={`py-2.5 text-xs font-semibold text-right whitespace-nowrap ${kas.tipe === "masuk" ? "text-emerald-300" : "text-amber-300"}`}>
+                            {kas.tipe === "masuk" ? "+" : "-"}{formatRupiah(kas.nominal)}
+                          </TableCell>
+                          <TableCell className="py-2.5 text-xs text-zinc-400 max-w-[180px] truncate">
+                            {kas.keterangan || <span className="text-zinc-600 italic">—</span>}
+                          </TableCell>
+                          <TableCell className="py-2.5">
+                            <button
+                              onClick={() => { setSelectedKas(kas); setIsKasDeleteOpen(true); }}
+                              className="h-7 w-7 rounded-lg text-zinc-500 hover:text-rose-300 hover:bg-rose-500/10 flex items-center justify-center transition-colors"
+                            >
+                              <IconTrash className="h-3.5 w-3.5" />
+                            </button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Summary bar */}
+              {kasList.length > 0 && (
+                <>
+                  <Separator className="bg-white/10" />
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-zinc-500">
+                      Menampilkan <span className="text-zinc-300">{kasList.length}</span> transaksi
+                    </span>
+                    {(() => {
+                      const totalMasuk = kasList.filter((k) => k.tipe === "masuk").reduce((s, k) => s + k.nominal, 0);
+                      const totalKeluar = kasList.filter((k) => k.tipe === "keluar").reduce((s, k) => s + k.nominal, 0);
+                      return (
+                        <div className="flex items-center gap-4">
+                          <span className="text-emerald-300">Masuk: {formatRupiah(totalMasuk)}</span>
+                          <span className="text-amber-300">Keluar: {formatRupiah(totalKeluar)}</span>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -810,6 +1171,150 @@ export default function UpaDetailPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsQrOpen(false)}>Tutup</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* QR Scanner Dialog */}
+      <Dialog open={isScanOpen} onOpenChange={setIsScanOpen}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Scan QR Absensi</DialogTitle>
+            <DialogDescription>Arahkan kamera ke QR yang sudah di-generate, lalu scan QR anggota.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="overflow-hidden rounded-xl border border-white/10 bg-zinc-950">
+              <Scanner
+                onScan={(detectedCodes) => {
+                  const code = detectedCodes?.[0]?.rawValue;
+                  if (code) handleQrScan(code);
+                }}
+                styles={{
+                  container: { borderRadius: 0 },
+                }}
+                allowMultiple={false}
+                scanDelay={1000}
+              />
+            </div>
+            {scanStatus && (
+              <div className={`rounded-xl border p-3 text-center text-xs ${
+                scanStatus.type === "success"
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                  : "border-rose-500/30 bg-rose-500/10 text-rose-300"
+              }`}>
+                {scanStatus.message}
+              </div>
+            )}
+            {scannedNames.length > 0 && (
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                <p className="text-[10px] text-zinc-500 font-semibold mb-2">Telah Absen ({scannedNames.length})</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {scannedNames.map((s) => (
+                    <Badge key={s.id} variant="outline" className="rounded-lg border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-[9px]">
+                      {s.nama}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setIsScanOpen(false); }}>
+              Tutup
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tambah Transaksi Kas Dialog */}
+      <Dialog open={isKasAddOpen} onOpenChange={setIsKasAddOpen}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Tambah Transaksi Kas</DialogTitle>
+            <DialogDescription>Catat pemasukan atau pengeluaran kas kelompok.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-zinc-400">Tipe</Label>
+              <select
+                className="h-9 w-full rounded-xl border border-white/10 bg-zinc-950 px-3 text-xs text-zinc-300 outline-none focus:border-emerald-500/50"
+                value={kasForm.tipe}
+                onChange={(e) => setKasForm({ ...kasForm, tipe: e.target.value })}
+              >
+                <option value="masuk">Pemasukan</option>
+                <option value="keluar">Pengeluaran</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-zinc-400">Anggota</Label>
+              <select
+                className="h-9 w-full rounded-xl border border-white/10 bg-zinc-950 px-3 text-xs text-zinc-300 outline-none focus:border-emerald-500/50"
+                value={kasForm.anggotaId}
+                onChange={(e) => setKasForm({ ...kasForm, anggotaId: e.target.value })}
+              >
+                <option value="">— Pilih Anggota —</option>
+                {data.anggota.map((a) => (
+                  <option key={a.id} value={a.id}>{a.namaLengkap}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-zinc-400">Nominal (Rp)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500 select-none pointer-events-none">Rp</span>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  className="h-9 pl-8 text-xs"
+                  placeholder="0"
+                  value={kasForm.nominal ? kasForm.nominal.toLocaleString("id-ID") : ""}
+                  onChange={(e) => {
+                    const angka = Number(e.target.value.replace(/\D/g, ""));
+                    setKasForm({ ...kasForm, nominal: angka });
+                  }}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-zinc-400">Tanggal</Label>
+              <Input
+                type="date"
+                className="h-9 text-xs"
+                value={kasForm.tanggal}
+                onChange={(e) => setKasForm({ ...kasForm, tanggal: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-zinc-400">Keterangan <span className="text-zinc-600">(opsional)</span></Label>
+              <textarea
+                className="min-h-[60px] w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-xs text-zinc-300 outline-none focus:border-emerald-500/50 resize-y"
+                placeholder="Catatan transaksi"
+                value={kasForm.keterangan}
+                onChange={(e) => setKasForm({ ...kasForm, keterangan: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsKasAddOpen(false)} disabled={kasSaving}>Batal</Button>
+            <Button onClick={handleAddKas} disabled={kasSaving || !kasForm.nominal || kasForm.nominal <= 0}>
+              {kasSaving ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Hapus Transaksi Kas Dialog */}
+      <Dialog open={isKasDeleteOpen} onOpenChange={setIsKasDeleteOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="text-rose-400">Hapus Transaksi</DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menghapus transaksi <strong>{selectedKas?.tipe === "masuk" ? "pemasukan" : "pengeluaran"}</strong> sebesar <strong>{selectedKas ? formatRupiah(selectedKas.nominal) : ""}</strong>?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setIsKasDeleteOpen(false)}>Batal</Button>
+            <Button variant="destructive" onClick={handleDeleteKas} className="bg-rose-500 hover:bg-rose-600">Hapus</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
