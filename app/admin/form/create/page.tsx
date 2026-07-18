@@ -69,7 +69,6 @@ export default function CreateFormPage() {
   const [saving, setSaving] = useState(false);
   const [judul, setJudul] = useState("");
   const [deskripsi, setDeskripsi] = useState("");
-  const [warnaAksen, setWarnaAksen] = useState("#10b981");
   const [headerGambar, setHeaderGambar] = useState("");
   const [headerFile, setHeaderFile] = useState<File | null>(null);
   const [limitSatuResponse, setLimitSatuResponse] = useState(false);
@@ -133,7 +132,7 @@ export default function CreateFormPage() {
       }
 
       const form = await api.post<{ id: number }>("/form", {
-        judul, deskripsi, warnaAksen, headerGambar: headerUrl, limitSatuResponse, allowEdit,
+        judul, deskripsi, headerGambar: headerUrl, limitSatuResponse, allowEdit,
       });
 
       for (const p of pertanyaanList) {
@@ -232,7 +231,7 @@ export default function CreateFormPage() {
         {activeTab === "pertanyaan" && (
           <div className="space-y-4 relative">
             {/* Header / Banner Card */}
-            <div className="rounded-2xl border border-white/5 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm relative group" style={{ borderTop: `6px solid ${warnaAksen}` }}>
+            <div className="rounded-2xl border border-white/5 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm relative group">
               {headerGambar ? (
                 <div className="relative h-36 w-full overflow-hidden">
                   <img src={headerGambar} alt="Banner" className="w-full h-full object-cover" />
@@ -289,8 +288,8 @@ export default function CreateFormPage() {
                       dragIndex === index ? "opacity-40" : ""
                     } ${
                       isActive
-                        ? "border-l-4 border-l-emerald-500 border-white/10 dark:border-white/10"
-                        : "border-white/5"
+                        ? "border-l-4 border-l-emerald-500 border-white/10 dark:border-white/10 z-20"
+                        : "border-white/5 z-10"
                     }`}
                   >
                     {/* Drag Handle */}
@@ -585,20 +584,6 @@ export default function CreateFormPage() {
         {/* -------------------- TAB 2: SETELAN (SETTINGS) -------------------- */}
         {activeTab === "setelan" && (
           <div className="space-y-6">
-            <Card className="rounded-2xl border border-white/5 bg-white dark:bg-zinc-900 shadow-sm">
-              <CardHeader><CardTitle className="text-sm font-semibold">Tampilan & Akses</CardTitle></CardHeader>
-              <CardContent className="space-y-5">
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-400">Warna Aksen</Label>
-                  <div className="flex items-center gap-2">
-                    <input type="color" value={warnaAksen} onChange={(e) => setWarnaAksen(e.target.value)}
-                      className="h-9 w-9 rounded-xl border border-white/10 bg-transparent cursor-pointer" />
-                    <span className="text-[10px] text-zinc-500">{warnaAksen}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
             <Card className="rounded-2xl border border-white/5 bg-white dark:bg-zinc-900 shadow-sm">
               <CardHeader><CardTitle className="text-sm font-semibold">Batasan Tanggapan</CardTitle></CardHeader>
               <CardContent className="space-y-4">

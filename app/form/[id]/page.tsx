@@ -69,7 +69,10 @@ export default function IsiFormPage() {
     for (const p of form.pertanyaan) {
       if (p.isWajib) {
         const j = jawaban[p.id];
-        if (p.tipe === "file" && !files[p.id]) { setValidationError(`"${p.pertanyaan}" wajib diisi`); return; }
+        if (p.tipe === "file") {
+          if (!files[p.id]) { setValidationError(`"${p.pertanyaan}" wajib diisi`); return; }
+          continue;
+        }
         if (!j || (Array.isArray(j) && j.length === 0) || (!Array.isArray(j) && !j.trim())) {
           setValidationError(`"${p.pertanyaan}" wajib diisi`); return;
         }

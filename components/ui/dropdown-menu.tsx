@@ -35,31 +35,34 @@ export function DropdownMenu({ children }: { children: React.ReactNode }) {
 
 export function DropdownMenuTrigger({ children, asChild }: { children: React.ReactNode, asChild?: boolean }) {
   const { open, setOpen } = React.useContext(DropdownMenuContext)!;
-  
+  const btnRef = React.useRef<HTMLButtonElement>(null);
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpen(!open);
+  };
+
   if (asChild && React.isValidElement(children)) {
     return React.cloneElement(children as React.ReactElement<any>, {
-      onClick: (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setOpen(!open);
-      }
+      onClick: handleClick,
     });
   }
 
   return (
-    <button onClick={() => setOpen(!open)}>
+    <button onClick={handleClick} ref={btnRef}>
       {children}
     </button>
   );
 }
 
-export function DropdownMenuContent({ 
-  children, 
-  className, 
+export function DropdownMenuContent({
+  children,
+  className,
   align = "right",
   side = "bottom",
   sideOffset = 8
-}: { 
-  children: React.ReactNode, 
+}: {
+  children: React.ReactNode,
   className?: string,
   align?: "left" | "right" | "end" | "start",
   side?: "top" | "bottom" | "left" | "right",
@@ -84,29 +87,27 @@ export function DropdownMenuContent({
   };
 
   return (
-    <div 
+    <div
       className={cn(
-        "absolute z-50 min-w-[8rem] overflow-hidden rounded-xl border border-white/10 bg-zinc-950 p-1 shadow-xl animate-in fade-in zoom-in-95 duration-200",
+        "absolute z-[9999] min-w-[8rem] overflow-hidden rounded-xl border border-white/10 bg-zinc-950 p-1 shadow-xl",
         sideClasses[side],
         (side === "top" || side === "bottom") && alignClasses[align],
         className
       )}
-      style={{
-        [side === "top" ? "marginBottom" : side === "bottom" ? "marginTop" : side === "left" ? "marginRight" : "marginLeft"]: `${sideOffset}px`
-      }}
+      style={{ [side === "top" ? "marginBottom" : side === "bottom" ? "marginTop" : side === "left" ? "marginRight" : "marginLeft"]: `${sideOffset}px` }}
     >
       {children}
     </div>
   );
 }
 
-export function DropdownMenuItem({ 
-  children, 
-  className, 
+export function DropdownMenuItem({
+  children,
+  className,
   onClick,
   variant = "default"
-}: { 
-  children: React.ReactNode, 
+}: {
+  children: React.ReactNode,
   className?: string,
   onClick?: () => void,
   variant?: "default" | "destructive"
@@ -117,8 +118,8 @@ export function DropdownMenuItem({
     <button
       className={cn(
         "group flex w-full items-center rounded-lg px-3 py-2 text-xs font-medium transition-colors",
-        variant === "destructive" 
-          ? "text-rose-400 hover:bg-rose-500/10" 
+        variant === "destructive"
+          ? "text-rose-400 hover:bg-rose-500/10"
           : "text-zinc-300 hover:bg-white/5 hover:text-zinc-100",
         className
       )}

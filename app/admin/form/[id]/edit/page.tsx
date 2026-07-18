@@ -89,7 +89,7 @@ export default function EditFormPage() {
   // Form states
   const [judul, setJudul] = useState("");
   const [deskripsi, setDeskripsi] = useState("");
-  const [warnaAksen, setWarnaAksen] = useState("#10b981");
+  // const [warnaAksen, setWarnaAksen] = useState("#10b981");
   const [headerGambar, setHeaderGambar] = useState("");
   const [headerFile, setHeaderFile] = useState<File | null>(null);
   const [limitSatuResponse, setLimitSatuResponse] = useState(false);
@@ -114,7 +114,7 @@ export default function EditFormPage() {
       ]);
       setJudul(form.judul);
       setDeskripsi(form.deskripsi || "");
-      setWarnaAksen(form.warnaAksen || "#10b981");
+      // setWarnaAksen(form.warnaAksen || "#10b981");
       setHeaderGambar(form.headerGambar || "");
       setLimitSatuResponse(form.limitSatuResponse || false);
       setAllowEdit(form.allowEdit || false);
@@ -198,7 +198,7 @@ export default function EditFormPage() {
         if (up.ok) headerUrl = (await up.json()).url;
       }
       await api.put(`/form/${id}`, {
-        judul, deskripsi, warnaAksen, headerGambar: headerUrl, limitSatuResponse, allowEdit, status,
+        judul, deskripsi, headerGambar: headerUrl, limitSatuResponse, allowEdit, status,
       });
       for (const p of pertanyaanList) {
         const payload: Record<string, unknown> = {
@@ -338,7 +338,7 @@ export default function EditFormPage() {
         {activeTab === "pertanyaan" && (
           <div className="space-y-4 relative">
             {/* Header / Banner Card */}
-            <div className="rounded-2xl border border-white/5 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm relative group" style={{ borderTop: `6px solid ${warnaAksen}` }}>
+            <div className="rounded-2xl border border-white/5 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm relative group">
               {headerGambar ? (
                 <div className="relative h-36 w-full overflow-hidden">
                   <img src={headerGambar} alt="Banner" className="w-full h-full object-cover" />
@@ -395,8 +395,8 @@ export default function EditFormPage() {
                       dragIndex === index ? "opacity-40" : ""
                     } ${
                       isActive
-                        ? "border-l-4 border-l-emerald-500 border-white/10 dark:border-white/10"
-                        : "border-white/5"
+                        ? "border-l-4 border-l-emerald-500 border-white/10 dark:border-white/10 z-20"
+                        : "border-white/5 z-10"
                     }`}
                   >
                     {/* Drag Handle */}
@@ -801,20 +801,6 @@ export default function EditFormPage() {
         {/* -------------------- TAB 3: SETELAN (SETTINGS) -------------------- */}
         {activeTab === "setelan" && (
           <div className="space-y-6">
-            <Card className="rounded-2xl border border-white/5 bg-white dark:bg-zinc-900 shadow-sm">
-              <CardHeader><CardTitle className="text-sm font-semibold">Tampilan & Akses</CardTitle></CardHeader>
-              <CardContent className="space-y-5">
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-400">Warna Aksen</Label>
-                  <div className="flex items-center gap-2">
-                    <input type="color" value={warnaAksen} onChange={(e) => setWarnaAksen(e.target.value)}
-                      className="h-9 w-9 rounded-xl border border-white/10 bg-transparent cursor-pointer" />
-                    <span className="text-[10px] text-zinc-500">{warnaAksen}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
             <Card className="rounded-2xl border border-white/5 bg-white dark:bg-zinc-900 shadow-sm">
               <CardHeader><CardTitle className="text-sm font-semibold">Batasan Tanggapan</CardTitle></CardHeader>
               <CardContent className="space-y-4">
