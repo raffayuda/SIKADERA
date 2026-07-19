@@ -98,11 +98,23 @@ export async function POST(
       // Validasi file upload
       if (p.tipe === "file" && p.fileFormat) {
         try {
-          const allowed = JSON.parse(p.fileFormat);
+          const allowed = p.fileFormat.split(",").map((f: string) => f.trim()).filter(Boolean);
           if (allowed.length > 0) {
             const ext = val.split(".").pop()?.toLowerCase();
-            if (ext && !allowed.includes(ext) && !allowed.includes("image")) {
-              return NextResponse.json({ error: `Format file tidak didukung untuk "${p.pertanyaan}"` }, { status: 400 });
+            if (ext && !allowed.includes(ext)) {
+              const extensionMap: Record<string, string[]> = {
+                image: ["jpg", "jpeg", "png", "gif", "webp", "svg"],
+                document: ["doc", "docx"],
+                presentation: ["ppt", "pptx"],
+                spreadsheet: ["xls", "xlsx"],
+                pdf: ["pdf"],
+                video: ["mp4", "webm", "avi"],
+                audio: ["mp3", "wav", "ogg"],
+              };
+              const allExts = allowed.flatMap((f: string) => extensionMap[f] || [f]);
+              if (!allExts.includes(ext)) {
+                return NextResponse.json({ error: `Format file tidak didukung untuk "${p.pertanyaan}"` }, { status: 400 });
+              }
             }
           }
         } catch {}
@@ -129,10 +141,18 @@ export async function POST(
       ...response,
       id: Number(response.id),
       formId: Number(response.formId),
+      jawaban: response.jawaban.map((j: { id: bigint; responseId: bigint; pertanyaanId: bigint; jawaban: string | null }) => ({
+        ...j,
+        id: Number(j.id),
+        responseId: Number(j.responseId),
+        pertanyaanId: Number(j.pertanyaanId),
+      })),
     }, { status: 201 });
   } catch (error) {
     if ((error as { code?: string }).code === "NEXT_REDIRECT") throw error;
-    return NextResponse.json({ error: "Terjadi kesalahan" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("POST /api/form/[id]/response error:", message, error);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -173,9 +193,20 @@ export async function PUT(
       include: { jawaban: true },
     });
 
-    return NextResponse.json({ ...updated, id: Number(updated.id), formId: Number(updated.formId) });
+    return NextResponse.json({
+      ...updated,
+      id: Number(updated.id),
+      formId: Number(updated.formId),
+      jawaban: updated.jawaban.map((j: { id: bigint; responseId: bigint; pertanyaanId: bigint; jawaban: string | null }) => ({
+        ...j,
+        id: Number(j.id),
+        responseId: Number(j.responseId),
+        pertanyaanId: Number(j.pertanyaanId),
+      })),
+    });
   } catch (error) {
     if ((error as { code?: string }).code === "NEXT_REDIRECT") throw error;
-    return NextResponse.json({ error: "Terjadi kesalahan" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

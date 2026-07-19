@@ -844,7 +844,16 @@ export default function EditFormPage() {
             {selectedResponse?.jawaban.map((j) => (
               <div key={j.id} className="rounded-xl border border-white/5 bg-zinc-50 dark:bg-zinc-900/60 p-3.5">
                 <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1.5">{j.pertanyaan.pertanyaan}</p>
-                <p className="text-xs text-zinc-800 dark:text-zinc-200 leading-relaxed">{j.jawaban || <span className="text-zinc-500 italic">Tidak diisi</span>}</p>
+                {j.pertanyaan.tipe === "file" && j.jawaban ? (
+                  <div className="mt-1 rounded-xl overflow-hidden border border-white/10 bg-zinc-950 max-w-[200px]">
+                    <img src={j.jawaban} alt="Upload" className="w-full h-auto object-cover" />
+                    <a href={j.jawaban} target="_blank" rel="noopener noreferrer" className="block text-center text-[10px] text-emerald-400 hover:text-emerald-300 py-1.5 underline underline-offset-2">
+                      Lihat file
+                    </a>
+                  </div>
+                ) : (
+                  <p className="text-xs text-zinc-800 dark:text-zinc-200 leading-relaxed">{j.jawaban || <span className="text-zinc-500 italic">Tidak diisi</span>}</p>
+                )}
               </div>
             ))}
           </div>
